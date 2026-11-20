@@ -16,7 +16,6 @@ export type Destination = {
 }
 
 export type Period = { from: string; to: string }
-export const hasPeriod = (period: Period) => Boolean(period.from && period.to)
 export type Profile = Period & {
   email: string
   title: string

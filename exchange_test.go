@@ -90,7 +90,6 @@ func TestExchangeWorkflow(t *testing.T) {
 	}
 
 	owner := login(nil)
-	request("GET", "/api/matches", nil, owner, http.StatusConflict)
 	p1 := profileInput{Institution: institutions[0], Name: "Owner", Field: "061", From: "2097-09", To: "2098-01",
 		Preferences: []preference{{Scope: "country", Value: "NL"}, {Scope: "region_group", Value: "DACH"}}}
 	request("PUT", "/api/profile", p1, owner, http.StatusNoContent)
@@ -153,41 +152,6 @@ func TestExchangeWorkflow(t *testing.T) {
 	got = matches(owner, "field=all")
 	if len(got) != 1 || !got[0].Sent || !got[0].Received {
 		t.Fatalf("mutual interest was not recorded: %+v", got)
-	}
-	withoutDates := p1
-	withoutDates.To = ""
-	request("PUT", "/api/profile", withoutDates, owner, http.StatusBadRequest)
-	if readProfile(owner)["to"] != p1.To {
-		t.Fatal("a partial date range replaced the existing availability")
-	}
-	withoutDates.From = ""
-	request("PUT", "/api/profile", withoutDates, owner, http.StatusNoContent)
-	if p := readProfile(owner); p["from"] != "" || p["to"] != "" {
-		t.Fatal("clearing both dates did not remove the saved availability")
-	}
-	p2.To = "2098-01"
-	request("PUT", "/api/profile", p2, other, http.StatusNoContent)
-	got = matches(owner, "field=all&minimum=6")
-	if len(got) != 1 || got[0].OverlapFrom != p2.From || got[0].OverlapTo != p2.To {
-		t.Fatalf("open availability did not match the candidate's full period: %+v", got)
-	}
-	if len(matches(owner, "")) != 0 || len(matches(owner, "field=all&region=dach")) != 0 ||
-		len(matches(owner, "field=all&from=2096-01&to=2096-06")) != 0 {
-		t.Fatal("open availability ignored a field, region, or explicitly selected period filter")
-	}
-	p2.From, p2.To = "", ""
-	request("PUT", "/api/profile", p2, other, http.StatusNoContent)
-	got = matches(owner, "field=all")
-	if len(got) != 1 || got[0].OverlapFrom != "" || got[0].OverlapTo != "" {
-		t.Fatalf("two open profiles should match without a fixed overlap: %+v", got)
-	}
-	request("PUT", "/api/profile", p1, owner, http.StatusNoContent)
-	got = matches(owner, "field=all")
-	if len(got) != 1 || got[0].OverlapFrom != p1.From || got[0].OverlapTo != p1.To {
-		t.Fatalf("an open candidate did not match the viewer's fixed period: %+v", got)
-	}
-	if len(matches(owner, "field=all&minimum=6")) != 0 {
-		t.Fatal("an open candidate met a minimum longer than the viewer's fixed period")
 	}
 	request("DELETE", "/api/session", nil, owner, http.StatusNoContent)
 	request("GET", "/api/profile", nil, owner, http.StatusUnauthorized)

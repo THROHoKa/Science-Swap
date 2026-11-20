@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { api, APIError, json } from './api'
-import { academicPresets, academicYear, basicDestinations, continentCodes, sameDestination, useExchangeLabels } from './exchange'
+import { basicDestinations, continentCodes, sameDestination, useExchangeLabels } from './exchange'
 import type { Catalog, Destination, Institution, Profile, Subdivision } from './exchange'
 
-const { t, locale, country, continent, place, month, field, destination } = useExchangeLabels()
+const { t, locale, country, continent, place, field, destination } = useExchangeLabels()
 const profile = ref<Profile>()
 const catalog = ref<Catalog>()
 const query = ref('')
@@ -15,7 +15,6 @@ const searchError = ref(false)
 const results = ref<HTMLElement | null>(null)
 const error = ref('')
 const saving = ref(false)
-const presets = academicPresets(academicYear())
 const addPlace = ref(false)
 const location = ref('')
 const subdivision = ref('')
@@ -112,8 +111,8 @@ function addDestination() {
   location.value = ''
 }
 
-function setPreset(preset: { from: string; to: string }) {
-  if (profile.value) Object.assign(profile.value, { from: preset.from, to: preset.to })
+function clearDates() {
+  if (profile.value) Object.assign(profile.value, { from: '', to: '' })
 }
 
 async function save() {
@@ -221,21 +220,12 @@ async function signOut() {
 
       <fieldset class="panel space-y-4">
         <legend class="px-2 font-semibold">{{ t('profile.exchange') }}</legend>
-        <div class="space-y-2">
-          <p class="text-sm font-semibold">{{ t('profile.quickDates') }}</p>
-          <div class="flex flex-wrap gap-2">
-            <button v-for="preset in presets" :key="preset.key" type="button" class="chip"
-              :title="`${month(preset.from)} – ${month(preset.to)}`" :aria-pressed="profile.from === preset.from && profile.to === preset.to" @click="setPreset(preset)">
-              {{ t(`periods.${preset.key}`) }}
-            </button>
-          </div>
-        </div>
         <p id="optional-dates" class="text-sm text-slate-600">{{ t('profile.optionalDates') }}</p>
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="block space-y-1.5 text-sm font-semibold"><span>{{ t('profile.from') }}</span><input v-model="profile.from" class="field text-base font-normal" type="month" :required="Boolean(profile.to)" aria-describedby="optional-dates"></label>
           <label class="block space-y-1.5 text-sm font-semibold"><span>{{ t('profile.to') }}</span><input v-model="profile.to" class="field text-base font-normal" type="month" :min="profile.from" :required="Boolean(profile.from)" aria-describedby="optional-dates"></label>
         </div>
-        <button v-if="profile.from || profile.to" type="button" class="header-link text-sm underline" @click="setPreset({ from: '', to: '' })">{{ t('profile.clearDates') }}</button>
+        <button v-if="profile.from || profile.to" type="button" class="header-link text-sm underline" @click="clearDates">{{ t('profile.clearDates') }}</button>
         <div role="group" aria-labelledby="destinations-label" aria-describedby="optional-destinations" class="space-y-2">
           <p id="destinations-label" class="text-sm font-semibold">{{ t('profile.destinations') }}</p>
           <p id="optional-destinations" class="text-sm text-slate-600">{{ t('profile.optionalDestinations') }}</p>

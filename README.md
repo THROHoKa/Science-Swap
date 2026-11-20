@@ -26,4 +26,11 @@ TEST_DATABASE_URL='postgres:///faculty_swap_test?host=/tmp'
 
 The multi-stage Dockerfile uses Node.js 24 to build Vue, then embeds the result and migrations in the Go binary. `fly.toml` targets Frankfurt (`fra`) and runs migrations before release. The Fly app needs a PostgreSQL 17+ connection in its `DATABASE_URL` secret.
 
+For a new Fly Managed Postgres database, enable `cube` and then `earthdistance` through Fly's administrator API before the first deploy. The app database role cannot create `earthdistance`.
+
+```sh
+flyctl mpg databases extensions enable cube --cluster "$FLY_MPG_CLUSTER" --database fly-db
+flyctl mpg databases extensions enable earthdistance --cluster "$FLY_MPG_CLUSTER" --database fly-db
+```
+
 The intended deployment automation is a GitHub Actions workflow that deploys to Fly.io after changes land on `main`.

@@ -12,7 +12,7 @@
     "navigation": "Hauptnavigation",
     "eyebrow": "Hochschulaustausch",
     "headline": "Ein Semester woanders.",
-    "description": "Finde jemanden für einen Austausch an einer anderen Hochschule. Fachgebiet, Zeitraum und Wunschziele sollen für beide passen.",
+    "description": "Finde jemanden für einen Austausch an einer anderen Hochschule. Entdecke Austauschprofile nach Fachgebiet, Standort und Verfügbarkeit.",
     "howItWorks": "So funktioniert’s",
     "signIn": "Anmelden",
     "createProfile": "Profil anlegen",
@@ -23,12 +23,12 @@
         "description": "Gib deine Hochschule und dein Fachgebiet ein. Stadt, Land und Region ergeben sich aus der Hochschule."
       },
       "preferences": {
-        "title": "Zeitraum und Ziele wählen",
-        "description": "Wähle, wann du Zeit für einen Austausch hast und welche Länder oder Regionen für dich infrage kommen."
+        "title": "Austauschwünsche angeben",
+        "description": "Du kannst angeben, wann du Zeit hast und welche Länder oder Regionen du gerne besuchen würdest."
       },
       "matches": {
         "title": "Eine Person für den Austausch finden",
-        "description": "Sieh, wessen Zeitraum und Wunschziele zu deinen passen. Bei gegenseitigem Interesse könnt ihr Kontakt aufnehmen."
+        "description": "Entdecke Austauschprofile weltweit oder filtere nach Region. Bei gegenseitigem Interesse könnt ihr Kontakt aufnehmen."
       }
     },
     "example": {
@@ -72,7 +72,7 @@
       "invalid_profile": "Gib einen Namen ein und prüfe deine Profildaten.",
       "invalid_reference": "Wähle eine Hochschule aus den Vorschlägen und ein Fachgebiet.",
       "invalid_period": "Gib beide Monate in der richtigen Reihenfolge ein oder lass beide Felder leer.",
-      "invalid_preferences": "Wähle mindestens ein gültiges Reiseziel.",
+      "invalid_preferences": "Wähle bis zu 30 gültige Reiseziele ohne Duplikate.",
       "profile_required": "Speichere dein Austauschprofil, um Vorschläge zu sehen.",
       "match_unavailable": "Dieser Vorschlag ist nicht mehr verfügbar."
     }
@@ -123,7 +123,8 @@
     "to": "Offen bis",
     "optionalDates": "Der Zeitraum ist optional. Lass beide Felder leer, um Vorschläge für alle Zeiträume zu sehen.",
     "clearDates": "Zeitraum löschen",
-    "destinations": "Wohin darf es gehen?",
+    "destinations": "Wunschziele (optional)",
+    "optionalDestinations": "Diese Ziele erscheinen in deinem Profil. Mit dem Regionsfilter bei den Austauschvorschlägen kannst du deine Suche eingrenzen.",
     "addPlace": "Land oder Region hinzufügen",
     "place": "Land oder Region",
     "choosePlace": "Land oder Region wählen",
@@ -145,7 +146,7 @@
     "minimum": "Mindestüberlappung",
     "minimumValue": "≥ {months} Mon.",
     "count": "Keine Vorschläge | Ein Vorschlag | {count} Vorschläge",
-    "explanation": "Die Ziele passen für beide Seiten. Sortiert nach gemeinsamer Verfügbarkeit.",
+    "explanation": "Sortiert nach gemeinsamer Verfügbarkeit.",
     "filters": "Filter",
     "show": "Vorschläge anzeigen | Einen Vorschlag anzeigen | {count} Vorschläge anzeigen",
     "you": "Du",

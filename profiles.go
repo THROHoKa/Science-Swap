@@ -85,7 +85,7 @@ func (a api) saveProfile(w http.ResponseWriter, r *http.Request, id string) {
 		apiError(w, http.StatusBadRequest, "invalid_period")
 		return
 	}
-	if len(p.Preferences) == 0 || len(p.Preferences) > 30 {
+	if len(p.Preferences) > 30 {
 		apiError(w, http.StatusBadRequest, "invalid_preferences")
 		return
 	}
@@ -139,6 +139,9 @@ func (a api) saveProfile(w http.ResponseWriter, r *http.Request, id string) {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM "SSwap_preferences" WHERE account_id = $1::text::uuid`, id); err != nil {
 		internalError(w, err)
 		return
+	}
+	if p.Preferences == nil {
+		p.Preferences = []preference{}
 	}
 	payload, _ := json.Marshal(p.Preferences)
 	saved, err = tx.ExecContext(ctx, `

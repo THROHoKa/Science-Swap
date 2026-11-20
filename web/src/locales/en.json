@@ -12,7 +12,7 @@
     "navigation": "Main navigation",
     "eyebrow": "University exchange",
     "headline": "Spend a semester somewhere new.",
-    "description": "Find a partner at another university. Science Swap connects people in similar fields whose dates and preferred destinations work for both.",
+    "description": "Find a partner at another university. Explore exchange profiles by field of study, location, and availability.",
     "howItWorks": "How it works",
     "signIn": "Sign in",
     "createProfile": "Create a profile",
@@ -23,12 +23,12 @@
         "description": "Enter your university and field of study. Your university tells us your city, country, and region."
       },
       "preferences": {
-        "title": "Choose dates and destinations",
-        "description": "Choose when you’re available for an exchange and add the countries or regions you’d like to visit."
+        "title": "Add exchange preferences",
+        "description": "You can add your availability and the countries or regions you’d like to visit."
       },
       "matches": {
         "title": "Find an exchange partner",
-        "description": "See whose dates and destinations fit yours. When you’re both interested, you can get in touch."
+        "description": "Browse exchange profiles worldwide or filter by region. When you’re both interested, you can get in touch."
       }
     },
     "example": {
@@ -72,7 +72,7 @@
       "invalid_profile": "Enter a name and check your profile details.",
       "invalid_reference": "Choose a university from the suggestions and select a field of study.",
       "invalid_period": "Enter both months in order, or leave both empty.",
-      "invalid_preferences": "Choose at least one valid destination.",
+      "invalid_preferences": "Choose up to 30 valid destinations without duplicates.",
       "profile_required": "Save your exchange profile to see suggestions.",
       "match_unavailable": "This suggestion is no longer available."
     }
@@ -123,7 +123,8 @@
     "to": "Available through",
     "optionalDates": "Dates are optional. Leave both months blank to match across all time intervals.",
     "clearDates": "Clear dates",
-    "destinations": "Where would you like to go?",
+    "destinations": "Preferred destinations (optional)",
+    "optionalDestinations": "These appear on your profile. Use the region filter on Exchange suggestions to narrow your search.",
     "addPlace": "Add a country or region",
     "place": "Country or region",
     "choosePlace": "Choose a country or region",
@@ -145,7 +146,7 @@
     "minimum": "Minimum overlap",
     "minimumValue": "≥ {months} mo.",
     "count": "No suggestions | One suggestion | {count} suggestions",
-    "explanation": "Destinations fit both profiles. Results are sorted by overlap.",
+    "explanation": "Results are sorted by availability overlap.",
     "filters": "Filters",
     "show": "Show suggestions | Show one suggestion | Show {count} suggestions",
     "you": "You",

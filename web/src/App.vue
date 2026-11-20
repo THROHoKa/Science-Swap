@@ -56,5 +56,21 @@ onMounted(refresh)
         </button>
       </section>
     </main>
+    <footer class="border-t border-slate-300/60 py-4 text-sm text-slate-600">
+      <i18n-t keypath="attribution.text" scope="global" tag="p">
+        <template #geonames>
+          <a class="underline" href="https://www.geonames.org/export/">{{ t('attribution.geonames') }}</a>
+        </template>
+        <template #geoLicense>
+          <a class="underline" href="https://creativecommons.org/licenses/by/4.0/">{{ t('attribution.geoLicense') }}</a>
+        </template>
+        <template #ror>
+          <a class="underline" href="https://ror.readme.io/docs/data-dump">{{ t('attribution.ror') }}</a>
+        </template>
+        <template #rorLicense>
+          <a class="underline" href="https://creativecommons.org/publicdomain/zero/1.0/">{{ t('attribution.rorLicense') }}</a>
+        </template>
+      </i18n-t>
+    </footer>
   </div>
 </template>

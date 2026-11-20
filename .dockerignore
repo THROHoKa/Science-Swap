@@ -2,6 +2,7 @@
 .git
 .cache
 bin
+data
 specs
 *:Zone.Identifier
 web/dist

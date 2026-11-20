@@ -1,5 +1,6 @@
 /.env
 /.cache/
 /bin/
+/data/
 /web/dist/
 /web/node_modules/

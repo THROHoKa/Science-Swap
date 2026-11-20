@@ -8,6 +8,13 @@
     "en": "English",
     "de": "Deutsch"
   },
+  "attribution": {
+    "text": "Standortdaten von {geonames} ({geoLicense}). Hochschuldaten von {ror} ({rorLicense}).",
+    "geonames": "GeoNames",
+    "geoLicense": "CC BY 4.0",
+    "ror": "ROR",
+    "rorLicense": "CC0"
+  },
   "database": {
     "label": "PostgreSQL-Version",
     "loading": "Datenbank wird geprüft…",

@@ -1,0 +1,35 @@
+[
+  {
+    "id": "https://ror.org/test-berlin",
+    "status": "active",
+    "types": ["education", "facility"],
+    "domains": ["example.org"],
+    "names": [
+      {"value": "Freie Universität Berlin", "lang": "de", "types": ["ror_display", "label"]},
+      {"value": "Free University of Berlin", "lang": "en", "types": ["label"]},
+      {"value": "FU", "types": ["acronym"]},
+      {"value": "Universität im Südwesten", "types": ["alias"]}
+    ],
+    "locations": [{"geonames_details": {
+      "name": "Berlin", "country_code": "DE", "continent_code": "EU",
+      "country_subdivision_code": "BE", "country_subdivision_name": "Berlin",
+      "lat": 52.52, "lng": 13.41
+    }}]
+  },
+  {
+    "id": "https://ror.org/test-rosenheim",
+    "status": "active",
+    "types": ["education"],
+    "names": [{"value": "TH Rosenheim", "types": ["ror_display"]}],
+    "locations": [{"geonames_details": {"name": "Rosenheim", "country_code": "DE"}}]
+  },
+  {
+    "id": "https://ror.org/test-linz",
+    "status": "active",
+    "types": ["education"],
+    "names": [{"value": "Testuniversität Linz", "types": ["ror_display"]}],
+    "locations": [{"geonames_details": {"name": "Linz", "country_code": "AT", "continent_code": "EU"}}]
+  },
+  {"id": "https://ror.org/test-closed", "status": "inactive", "types": ["education"]},
+  {"id": "https://ror.org/test-company", "status": "active", "types": ["company"]}
+]

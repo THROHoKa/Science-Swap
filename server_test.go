@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"io/fs"
 	"net/http"
@@ -12,7 +13,8 @@ import (
 	"time"
 )
 
-func TestHelloWorld(t *testing.T) {
+func testDatabase(t *testing.T) *sql.DB {
+	t.Helper()
 	url := os.Getenv("TEST_DATABASE_URL")
 	if url == "" {
 		t.Fatal("set TEST_DATABASE_URL to faculty_swap_test")
@@ -21,7 +23,7 @@ func TestHelloWorld(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	t.Cleanup(func() { db.Close() })
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
@@ -34,11 +36,18 @@ func TestHelloWorld(t *testing.T) {
 	if name != "faculty_swap_test" || versionNumber < 170000 {
 		t.Fatalf("expected faculty_swap_test on PostgreSQL 17+, got %s on %d", name, versionNumber)
 	}
+	return db
+}
+
+func TestHelloWorld(t *testing.T) {
+	db := testDatabase(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
 	if err := migrate(ctx, db); err != nil {
 		t.Fatal(err)
 	}
 	var extensionCount int
-	err = db.QueryRowContext(ctx, `
+	err := db.QueryRowContext(ctx, `
 		SELECT count(*) FROM pg_extension
 		WHERE extname IN ('pg_trgm', 'unaccent', 'btree_gist', 'citext', 'cube', 'earthdistance')
 	`).Scan(&extensionCount)

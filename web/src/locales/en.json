@@ -8,6 +8,13 @@
     "en": "English",
     "de": "Deutsch"
   },
+  "attribution": {
+    "text": "Location data from {geonames} ({geoLicense}). Institution data from {ror} ({rorLicense}).",
+    "geonames": "GeoNames",
+    "geoLicense": "CC BY 4.0",
+    "ror": "ROR",
+    "rorLicense": "CC0"
+  },
   "database": {
     "label": "PostgreSQL version",
     "loading": "Checking the database…",

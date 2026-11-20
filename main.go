@@ -26,8 +26,9 @@ func main() {
 }
 
 func run(ctx context.Context, args []string) error {
-	if len(args) > 1 || (len(args) == 1 && args[0] != "migrate") {
-		return errors.New("usage: science-swap [migrate]")
+	const usage = "usage: science-swap [migrate | import-ror (--latest | --file PATH)]"
+	if len(args) > 0 && args[0] != "import-ror" && (len(args) != 1 || args[0] != "migrate") {
+		return errors.New(usage)
 	}
 	url := os.Getenv("DATABASE_URL")
 	if url == "" {
@@ -39,8 +40,11 @@ func run(ctx context.Context, args []string) error {
 	}
 	defer db.Close()
 
-	if len(args) == 1 {
-		return migrate(ctx, db)
+	if len(args) > 0 {
+		if args[0] == "migrate" {
+			return migrate(ctx, db)
+		}
+		return importRORCommand(ctx, db, args[1:])
 	}
 
 	static, err := fs.Sub(files, "web/dist")

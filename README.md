@@ -22,6 +22,21 @@ TEST_DATABASE_URL='postgres:///faculty_swap_test?host=/tmp'
 | `make test` | Checks translation keys and exercises the API and migrations against `faculty_swap_test` |
 | `make build` | Writes the self-contained app to `bin/science-swap` |
 
+## Reference data
+
+`make db-migrate` creates the institutions table and seeds the bilingual ISCED-F fields and the EU and DACH region groups. To import university records into the local development database, load `.env` and use the built binary:
+
+```sh
+set -a
+. ./.env
+set +a
+./bin/science-swap import-ror --latest
+# Or use a complete release ZIP with its original filename.
+./bin/science-swap import-ror --file data/ror/v2.16-2026-11-19-ror-data.zip
+```
+
+Each import reconciles the database with a complete ROR snapshot. It preserves institution IDs and marks existing records that leave the active education set. Downloads and archives under `data/` are Git-ignored.
+
 ## Deployment
 
 The multi-stage Dockerfile uses Node.js 24 to build Vue, then embeds the result and migrations in the Go binary. `fly.toml` targets Frankfurt (`fra`) and runs migrations before release. The Fly app needs a PostgreSQL 17+ connection in its `DATABASE_URL` secret.

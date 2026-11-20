@@ -14,7 +14,8 @@ const i18n = createI18n({
 })
 
 const path = window.location.pathname
-const page = path === '/login' ? 'login' : path === '/profile' ? 'profile' : path === '/matches' ? 'matches' : 'home'
+const candidateId = path.startsWith('/matches/') ? path.slice('/matches/'.length) : ''
+const page = candidateId ? 'matchProfile' : path === '/login' ? 'login' : path === '/profile' ? 'profile' : path === '/matches' ? 'matches' : 'home'
 
 watchEffect(() => {
   const { t, locale } = i18n.global
@@ -22,4 +23,4 @@ watchEffect(() => {
   document.title = page === 'home' ? t('app.name') : t(`${page}.pageTitle`)
 })
 
-createApp(App, { page }).use(i18n).mount('#app')
+createApp(App, { page, candidateId }).use(i18n).mount('#app')

@@ -72,6 +72,7 @@
       "invalid_profile": "Enter a name and check your profile details.",
       "invalid_reference": "Choose a university from the suggestions and select a field of study.",
       "invalid_period": "Enter both months in order, or leave both empty.",
+      "invalid_teaching_areas": "Enter a title and select an experience level for each new teaching area.",
       "invalid_preferences": "Choose up to 30 valid destinations without duplicates.",
       "profile_required": "Save your exchange profile to see suggestions.",
       "match_unavailable": "This suggestion is no longer available."
@@ -127,6 +128,27 @@
     "add": "Add destination",
     "removePlace": "Remove {place}",
     "save": "Save and see suggestions"
+  },
+  "teaching": {
+    "heading": "Teaching areas",
+    "title": "Title or lecture",
+    "experience": "Experience",
+    "chooseExperience": "Select experience",
+    "unspecified": "Experience unspecified",
+    "add": "Add teaching area",
+    "remove": "Remove",
+    "levels": {
+      "full_lecture": "Full lecture",
+      "exercise_only": "Exercise only",
+      "single_units": "Single units",
+      "general_knowledge": "General knowledge"
+    }
+  },
+  "matchProfile": {
+    "pageTitle": "Exchange profile · Science Swap",
+    "back": "Back to suggestions",
+    "availability": "Availability",
+    "noDestinations": "No preferred destinations listed"
   },
   "matches": {
     "pageTitle": "Exchange suggestions · Science Swap",

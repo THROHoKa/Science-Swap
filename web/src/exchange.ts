@@ -15,6 +15,9 @@ export type Destination = {
   value: string
 }
 
+export const teachingExperiences = ['full_lecture', 'exercise_only', 'single_units', 'general_knowledge'] as const
+export type TeachingArea = { title: string; experience: typeof teachingExperiences[number] | null }
+
 export type Period = { from: string; to: string }
 export const hasPeriod = (period: Period) => Boolean(period.from && period.to)
 export const isAnyTime = ({ from, to }: Period) => !from && !to
@@ -27,7 +30,7 @@ export type Profile = Period & {
   name: string
   institution: Institution | null
   field: string
-  teaching: string
+  teachingAreas: TeachingArea[]
   preferences: Destination[]
 }
 type Label = { code: string; en: string; de: string }
@@ -39,7 +42,6 @@ export type Candidate = Period & {
   name: string
   institution: Institution
   field: string
-  teaching: string
   demo: boolean
   overlapFrom: string
   overlapTo: string
@@ -47,6 +49,7 @@ export type Candidate = Period & {
   sent: boolean
   received: boolean
 }
+export type CandidateDetails = Omit<Candidate, 'overlapFrom' | 'overlapTo'> & { teachingAreas: TeachingArea[] }
 export type Matches = Period & { results: Candidate[] }
 export type MatchFilter = Period & { fields: string[]; region: string; minimum: number }
 

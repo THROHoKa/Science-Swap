@@ -4,12 +4,13 @@ import { useI18n } from 'vue-i18n'
 import HomePage from './HomePage.vue'
 import LoginPage from './LoginPage.vue'
 import MatchesPage from './MatchesPage.vue'
+import MatchProfilePage from './MatchProfilePage.vue'
 import ProfilePage from './ProfilePage.vue'
 import SwapIcon from './SwapIcon.vue'
 import { useDatabaseStatus } from './database'
 import { saveLocale } from './locale'
 
-defineProps<{ page: 'home' | 'login' | 'profile' | 'matches' }>()
+defineProps<{ page: 'home' | 'login' | 'profile' | 'matches' | 'matchProfile'; candidateId: string }>()
 
 const { t, locale } = useI18n()
 const { database, refresh } = useDatabaseStatus()
@@ -75,6 +76,7 @@ watch(locale, saveLocale)
     <HomePage v-if="page === 'home'" />
     <LoginPage v-else-if="page === 'login'" />
     <ProfilePage v-else-if="page === 'profile'" />
+    <MatchProfilePage v-else-if="page === 'matchProfile'" :candidate-id="candidateId" />
     <MatchesPage v-else />
 
     <footer v-if="page === 'home'" class="mt-auto">

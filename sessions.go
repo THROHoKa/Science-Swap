@@ -52,7 +52,7 @@ func (a api) startSession(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Email string `json:"email"`
 	}
-	if !decodeJSON(w, r, &input) {
+	if !decodeJSON(w, r, &input, 16<<10) {
 		return
 	}
 	email := strings.TrimSpace(input.Email)

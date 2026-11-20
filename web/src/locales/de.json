@@ -72,6 +72,7 @@
       "invalid_profile": "Gib einen Namen ein und prüfe deine Profildaten.",
       "invalid_reference": "Wähle eine Hochschule aus den Vorschlägen und ein Fachgebiet.",
       "invalid_period": "Gib beide Monate in der richtigen Reihenfolge ein oder lass beide Felder leer.",
+      "invalid_teaching_areas": "Gib für jedes neue Lehrgebiet einen Titel an und wähle deine Erfahrung aus.",
       "invalid_preferences": "Wähle bis zu 30 gültige Reiseziele ohne Duplikate.",
       "profile_required": "Speichere dein Austauschprofil, um Vorschläge zu sehen.",
       "match_unavailable": "Dieser Vorschlag ist nicht mehr verfügbar."
@@ -127,6 +128,27 @@
     "add": "Reiseziel hinzufügen",
     "removePlace": "{place} entfernen",
     "save": "Speichern und Vorschläge ansehen"
+  },
+  "teaching": {
+    "heading": "Lehrgebiete",
+    "title": "Titel oder Lehrveranstaltung",
+    "experience": "Erfahrung",
+    "chooseExperience": "Erfahrung auswählen",
+    "unspecified": "Erfahrung nicht angegeben",
+    "add": "Lehrgebiet hinzufügen",
+    "remove": "Entfernen",
+    "levels": {
+      "full_lecture": "Vollständige Vorlesung",
+      "exercise_only": "Nur Übungen",
+      "single_units": "Einzelne Lehreinheiten",
+      "general_knowledge": "Allgemeine Fachkenntnisse"
+    }
+  },
+  "matchProfile": {
+    "pageTitle": "Austauschprofil · Science Swap",
+    "back": "Zurück zu den Vorschlägen",
+    "availability": "Verfügbarkeit",
+    "noDestinations": "Keine Wunschziele angegeben"
   },
   "matches": {
     "pageTitle": "Austauschvorschläge · Science Swap",

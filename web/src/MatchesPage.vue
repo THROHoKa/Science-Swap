@@ -4,6 +4,7 @@ import { api, APIError } from './api'
 import { hasPeriod, indexMonth, isAnyTime, isValidPeriod, monthIndex, useExchangeLabels } from './exchange'
 import type { Candidate, Catalog, MatchFilter, Matches, Period, Profile } from './exchange'
 import MatchFilters from './MatchFilters.vue'
+import MatchContact from './MatchContact.vue'
 
 const { t, month, place, field, destination, regionLabel } = useExchangeLabels()
 const profile = ref<Profile>()
@@ -12,7 +13,6 @@ const matches = ref<Matches>()
 const error = ref('')
 const loading = ref(true)
 const sheet = ref<HTMLDialogElement | null>(null)
-const pending = ref(new Set<string>())
 const filters = ref<MatchFilter>({ fields: [], region: 'world', from: '', to: '', minimum: 1 })
 const validPeriod = computed(() => isValidPeriod(filters.value))
 const searchQuery = computed(() => {
@@ -91,19 +91,6 @@ function availability(candidate: Candidate, requested: Period) {
     : available
 }
 
-async function requestContact(candidate: Candidate) {
-  if (pending.value.has(candidate.id)) return
-  pending.value.add(candidate.id)
-  error.value = ''
-  try {
-    await api('/interests/' + candidate.id, { method: 'PUT' })
-    candidate.sent = true
-  } catch (problem) {
-    error.value = problem instanceof APIError ? problem.code : 'unavailable'
-  } finally {
-    pending.value.delete(candidate.id)
-  }
-}
 </script>
 
 <template>
@@ -145,12 +132,16 @@ async function requestContact(candidate: Candidate) {
           </div>
         </div>
         <p v-if="!matches.results.length && !loading" class="panel border-dashed text-center text-slate-600">{{ t('matches.empty') }}</p>
-        <article v-for="candidate in matches.results" :key="candidate.id" class="panel space-y-4">
+        <article v-for="candidate in matches.results" :key="candidate.id" class="panel relative space-y-4 hover:border-indigo-300">
           <div class="flex items-start justify-between gap-3">
             <div class="flex min-w-0 gap-3">
               <span class="grid size-10 shrink-0 place-items-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-900 sm:size-12" aria-hidden="true">{{ initials(candidate.name) }}</span>
               <div class="min-w-0 space-y-1">
-                <h2 class="wrap-break-word font-semibold sm:text-lg">{{ [candidate.title, candidate.name].filter(Boolean).join(' ') }}</h2>
+                <h2 class="wrap-break-word font-semibold sm:text-lg">
+                  <a :href="`/matches/${candidate.id}`" class="hover:underline after:absolute after:inset-0 after:rounded-xl after:content-[''] focus-visible:after:outline-2 focus-visible:after:outline-indigo-600">
+                    {{ [candidate.title, candidate.name].filter(Boolean).join(' ') }}
+                  </a>
+                </h2>
                 <p class="wrap-break-word text-sm">{{ candidate.institution.name }}</p>
                 <p class="text-sm text-slate-600">{{ place(candidate.institution) }}</p>
               </div>
@@ -171,7 +162,6 @@ async function requestContact(candidate: Candidate) {
             <span v-if="candidate.demo" class="summary-chip">{{ t('matches.demo') }}</span>
             <span v-if="candidate.preferences.length" class="summary-chip bg-slate-100 text-slate-700">{{ t('matches.seeks', { places: candidate.preferences.map(item => destination(item, catalog!)).join(', ') }) }}</span>
           </div>
-          <p v-if="candidate.teaching" class="wrap-break-word text-sm text-slate-600">{{ candidate.teaching }}</p>
           <div v-if="axis.ticks.length" class="grid grid-cols-[3rem_1fr] items-center gap-x-3 gap-y-2 text-sm text-slate-600" aria-hidden="true">
             <span>{{ t('matches.you') }}</span>
             <div class="track">
@@ -186,11 +176,7 @@ async function requestContact(candidate: Candidate) {
           </div>
           <div class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
             <p class="text-sm text-slate-600">{{ availability(candidate, matches) }}</p>
-            <p v-if="candidate.sent && candidate.received" class="text-sm font-semibold text-indigo-800">{{ t('matches.mutual') }}</p>
-            <p v-else-if="candidate.sent" class="text-sm font-semibold text-indigo-800">{{ t('matches.sent') }}</p>
-            <button v-else type="button" class="button button-primary w-full px-4 disabled:opacity-50 sm:w-auto" :disabled="pending.has(candidate.id)" @click="requestContact(candidate)">
-              {{ t(candidate.received ? 'matches.accept' : 'matches.request') }}
-            </button>
+            <MatchContact v-model:sent="candidate.sent" :id="candidate.id" :received="candidate.received" @error="error = $event" />
           </div>
           <p v-if="candidate.sent && candidate.received" class="text-sm text-slate-600">{{ t('matches.emailLater') }}</p>
         </article>

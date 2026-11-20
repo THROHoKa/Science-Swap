@@ -15,16 +15,32 @@ type preference struct {
 	Value string `json:"value"`
 }
 
-type profileInput struct {
-	Title       string       `json:"title"`
-	Name        string       `json:"name"`
-	Institution int64        `json:"institutionId"`
-	Field       string       `json:"field"`
-	Teaching    string       `json:"teaching"`
-	From        string       `json:"from"`
-	To          string       `json:"to"`
-	Preferences []preference `json:"preferences"`
+type teachingArea struct {
+	Title      string  `json:"title"`
+	Experience *string `json:"experience"`
 }
+
+type profileInput struct {
+	Title         string         `json:"title"`
+	Name          string         `json:"name"`
+	Institution   int64          `json:"institutionId"`
+	Field         string         `json:"field"`
+	TeachingAreas []teachingArea `json:"teachingAreas"`
+	From          string         `json:"from"`
+	To            string         `json:"to"`
+	Preferences   []preference   `json:"preferences"`
+}
+
+// Profiles saved before structured teaching areas retain their text without an assigned experience.
+const teachingAreasJSON = `coalesce(p.teaching_entries, CASE
+	WHEN btrim(p.teaching_areas) <> '' THEN jsonb_build_array(
+		jsonb_build_object('title', btrim(p.teaching_areas), 'experience', NULL))
+	ELSE '[]'::jsonb END)`
+
+const profilePreferencesJSON = `coalesce((
+	SELECT jsonb_agg(jsonb_build_object('scope', f.scope, 'value', f.value) ORDER BY f.scope, f.value)
+	FROM "SSwap_preferences" f WHERE f.account_id = p.account_id
+), '[]'::jsonb)`
 
 func (a api) getProfile(w http.ResponseWriter, r *http.Request, id string) {
 	var data json.RawMessage
@@ -32,13 +48,10 @@ func (a api) getProfile(w http.ResponseWriter, r *http.Request, id string) {
 		SELECT jsonb_build_object(
 			'email', a.email, 'title', coalesce(p.title, ''), 'name', coalesce(p.name, ''),
 			'institution', `+institutionJSON+`, 'field', coalesce(p.isced_code::text, ''),
-			'teaching', coalesce(p.teaching_areas, ''),
+			'teachingAreas', `+teachingAreasJSON+`,
 			'from', coalesce(to_char(lower(d.period), 'YYYY-MM'), ''),
 			'to', coalesce(to_char(upper(d.period) - 1, 'YYYY-MM'), ''),
-			'preferences', coalesce((
-				SELECT jsonb_agg(jsonb_build_object('scope', f.scope, 'value', f.value) ORDER BY f.scope, f.value)
-				FROM "SSwap_preferences" f WHERE f.account_id = a.id
-			), '[]'::jsonb)
+			'preferences', `+profilePreferencesJSON+`
 		)
 		FROM "SSwap_accounts" a
 		LEFT JOIN "SSwap_profiles" p ON p.account_id = a.id
@@ -70,13 +83,12 @@ func optionalMonthRange(from, to string) (string, string, bool) {
 
 func (a api) saveProfile(w http.ResponseWriter, r *http.Request, id string) {
 	var p profileInput
-	if !decodeJSON(w, r, &p) {
+	if !decodeJSON(w, r, &p, 72<<10) {
 		return
 	}
-	p.Title, p.Name, p.Teaching = strings.TrimSpace(p.Title), strings.TrimSpace(p.Name), strings.TrimSpace(p.Teaching)
+	p.Title, p.Name = strings.TrimSpace(p.Title), strings.TrimSpace(p.Name)
 	if p.Name == "" || utf8.RuneCountInString(p.Name) > 120 || utf8.RuneCountInString(p.Title) > 40 ||
-		utf8.RuneCountInString(p.Teaching) > 500 || p.Institution <= 0 || len(p.Field) != 3 ||
-		strings.ContainsRune(p.Title+p.Name+p.Teaching, 0) {
+		p.Institution <= 0 || len(p.Field) != 3 || strings.ContainsRune(p.Title+p.Name, 0) {
 		apiError(w, http.StatusBadRequest, "invalid_profile")
 		return
 	}
@@ -88,6 +100,36 @@ func (a api) saveProfile(w http.ResponseWriter, r *http.Request, id string) {
 	if len(p.Preferences) > 30 {
 		apiError(w, http.StatusBadRequest, "invalid_preferences")
 		return
+	}
+	if p.TeachingAreas == nil {
+		p.TeachingAreas = []teachingArea{}
+	}
+	if len(p.TeachingAreas) > 20 {
+		apiError(w, http.StatusBadRequest, "invalid_teaching_areas")
+		return
+	}
+	var legacyTitle string
+	for i := range p.TeachingAreas {
+		area := &p.TeachingAreas[i]
+		area.Title = strings.TrimSpace(area.Title)
+		if area.Title == "" || utf8.RuneCountInString(area.Title) > 500 || strings.ContainsRune(area.Title, 0) {
+			apiError(w, http.StatusBadRequest, "invalid_teaching_areas")
+			return
+		}
+		if area.Experience == nil {
+			if legacyTitle != "" {
+				apiError(w, http.StatusBadRequest, "invalid_teaching_areas")
+				return
+			}
+			legacyTitle = area.Title
+			continue
+		}
+		switch *area.Experience {
+		case "full_lecture", "exercise_only", "single_units", "general_knowledge":
+		default:
+			apiError(w, http.StatusBadRequest, "invalid_teaching_areas")
+			return
+		}
 	}
 	for _, pref := range p.Preferences {
 		if strings.ContainsRune(pref.Scope+pref.Value, 0) {
@@ -109,14 +151,30 @@ func (a api) saveProfile(w http.ResponseWriter, r *http.Request, id string) {
 		internalError(w, err)
 		return
 	}
+	if legacyTitle != "" {
+		var previouslySaved bool
+		err := tx.QueryRowContext(ctx, `
+			SELECT EXISTS (SELECT 1 FROM "SSwap_profiles" p WHERE p.account_id = $1::text::uuid
+				AND `+teachingAreasJSON+` @> jsonb_build_array(jsonb_build_object('title', $2::text, 'experience', NULL)))`,
+			id, legacyTitle).Scan(&previouslySaved)
+		if err != nil {
+			internalError(w, err)
+			return
+		}
+		if !previouslySaved {
+			apiError(w, http.StatusBadRequest, "invalid_teaching_areas")
+			return
+		}
+	}
+	teaching, _ := json.Marshal(p.TeachingAreas)
 	saved, err := tx.ExecContext(ctx, `
-		INSERT INTO "SSwap_profiles" (account_id, title, name, institution_id, isced_code, teaching_areas)
-		SELECT $1::text::uuid, $2, $3, i.id, f.code, $6
+		INSERT INTO "SSwap_profiles" (account_id, title, name, institution_id, isced_code, teaching_entries)
+		SELECT $1::text::uuid, $2, $3, i.id, f.code, $6::text::jsonb
 		FROM "SSwap_institutions" i CROSS JOIN "SSwap_isced_fields" f
 		WHERE i.id = $4 AND i.status = 'active' AND f.code = $5
 		ON CONFLICT (account_id) DO UPDATE SET title = excluded.title, name = excluded.name,
-			institution_id = excluded.institution_id, isced_code = excluded.isced_code, teaching_areas = excluded.teaching_areas`,
-		id, p.Title, p.Name, p.Institution, p.Field, p.Teaching)
+			institution_id = excluded.institution_id, isced_code = excluded.isced_code, teaching_entries = excluded.teaching_entries`,
+		id, p.Title, p.Name, p.Institution, p.Field, string(teaching))
 	if err != nil {
 		internalError(w, err)
 		return

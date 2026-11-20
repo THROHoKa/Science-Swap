@@ -92,13 +92,6 @@
     "OC": "Ozeanien",
     "SA": "Südamerika"
   },
-  "periods": {
-    "any": "Jederzeit",
-    "saved": "Mein Zeitraum",
-    "year": "Studienjahr",
-    "winter": "Wintersemester",
-    "summer": "Sommersemester"
-  },
   "profile": {
     "pageTitle": "Mein Profil · Science Swap",
     "title": "Dein Profil",
@@ -140,8 +133,14 @@
     "navigation": "Austauschvorschläge",
     "homeInstitution": "Deine Hochschule",
     "allFields": "Alle Fachgebiete",
+    "addField": "Fachgebiet hinzufügen",
+    "removeField": "{field} entfernen",
     "region": "Region",
     "period": "Dein Wunschzeitraum",
+    "anyTime": "Jederzeit",
+    "from": "Von",
+    "to": "Bis",
+    "incompletePeriod": "Unvollständiger Zeitraum",
     "minimum": "Mindestüberlappung",
     "minimumValue": "≥ {months} Mon.",
     "count": "Keine Vorschläge | Ein Vorschlag | {count} Vorschläge",

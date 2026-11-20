@@ -33,7 +33,7 @@ Application tables use the `SSwap` prefix.
 | Interest | One profile's expression of interest in another profile |
 | Match | Pair of profiles with reciprocal interest |
 
-Suggestions default to the same three-digit ISCED-F field. People who leave their dates open can match across all time intervals. With a specific time interval selected, PostgreSQL's `&&` operator checks date overlap and users can require one, three, or six shared months.
+Suggestions start with the profile’s three-digit ISCED-F field. Users can add or remove fields, search by continent or region, and choose any time or enter a custom month range independently of the saved profile. With a specific time interval selected, PostgreSQL's `&&` operator checks date overlap and users can require one, three, or six shared months.
 
 During the email-entry phase, an unverified account is accessible through its current browser session. Contact requests are saved as interest. Email verification and delivery are required before the email-contact step is enabled.
 

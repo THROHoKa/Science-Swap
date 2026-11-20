@@ -92,13 +92,6 @@
     "OC": "Oceania",
     "SA": "South America"
   },
-  "periods": {
-    "any": "Any time",
-    "saved": "My availability",
-    "year": "Academic year",
-    "winter": "Winter semester",
-    "summer": "Summer semester"
-  },
   "profile": {
     "pageTitle": "My profile · Science Swap",
     "title": "Your profile",
@@ -140,8 +133,14 @@
     "navigation": "Exchange suggestions",
     "homeInstitution": "Your university",
     "allFields": "All fields",
+    "addField": "Add a field of study",
+    "removeField": "Remove {field}",
     "region": "Region",
     "period": "Preferred period",
+    "anyTime": "Any time",
+    "from": "From",
+    "to": "Through",
+    "incompletePeriod": "Incomplete date range",
     "minimum": "Minimum overlap",
     "minimumValue": "≥ {months} mo.",
     "count": "No suggestions | One suggestion | {count} suggestions",

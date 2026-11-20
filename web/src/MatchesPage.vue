@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { api, APIError } from './api'
-import { academicPresets, academicYear, hasPeriod, indexMonth, monthIndex, useExchangeLabels } from './exchange'
+import { hasPeriod, indexMonth, isAnyTime, isValidPeriod, monthIndex, useExchangeLabels } from './exchange'
 import type { Candidate, Catalog, MatchFilter, Matches, Period, Profile } from './exchange'
 import MatchFilters from './MatchFilters.vue'
 
-const { t, month, place, field, destination } = useExchangeLabels()
+const { t, month, place, field, destination, regionLabel } = useExchangeLabels()
 const profile = ref<Profile>()
 const catalog = ref<Catalog>()
 const matches = ref<Matches>()
@@ -13,16 +13,15 @@ const error = ref('')
 const loading = ref(true)
 const sheet = ref<HTMLDialogElement | null>(null)
 const pending = ref(new Set<string>())
-const filters = ref<MatchFilter>({ allFields: false, region: 'world', preset: 'saved', minimum: 1 })
-const samePeriod = (a: Period, b: Period) => a.from === b.from && a.to === b.to
-const periods = computed(() => {
-  const p = profile.value
-  if (!p) return []
-  if (!hasPeriod(p)) return [{ key: 'any', from: '', to: '' }, ...academicPresets(academicYear())]
-  const [year, monthNumber] = p.from.split('-').map(Number)
-  const anchor = year - Number(monthNumber < 9)
-  const presets = academicPresets(anchor || academicYear())
-  return presets.some(preset => samePeriod(preset, p)) ? presets : [{ key: 'saved', from: p.from, to: p.to }, ...presets]
+const filters = ref<MatchFilter>({ fields: [], region: 'world', from: '', to: '', minimum: 1 })
+const validPeriod = computed(() => isValidPeriod(filters.value))
+const searchQuery = computed(() => {
+  const { fields, region, from, to, minimum } = filters.value
+  if (!profile.value || (!isAnyTime(filters.value) && !validPeriod.value)) return null
+  const query = new URLSearchParams({ from, to, region })
+  for (const code of fields.length ? fields : ['all']) query.append('field', code)
+  if (validPeriod.value) query.set('minimum', String(minimum))
+  return query.toString()
 })
 
 onMounted(async () => {
@@ -34,24 +33,21 @@ onMounted(async () => {
       return
     }
     catalog.value = options
+    filters.value = { ...filters.value, fields: [saved.field] }
     profile.value = saved
-    filters.value = { ...filters.value, preset: periods.value.find(period => samePeriod(period, saved))?.key ?? 'saved' }
   } catch {
     error.value = 'unavailable'
     loading.value = false
   }
 })
 
-watch([profile, filters], async ([p, f], _, cleanup) => {
-  if (!p) return
+watch(searchQuery, async (query, _, cleanup) => {
+  if (query === null) {
+    loading.value = false
+    return
+  }
   const controller = new AbortController()
   cleanup(() => controller.abort())
-  const selected = periods.value.find(period => period.key === f.preset) ?? p
-  const query = new URLSearchParams({
-    from: selected.from, to: selected.to, region: f.region,
-    field: f.allFields ? 'all' : 'same',
-  })
-  if (hasPeriod(selected)) query.set('minimum', String(f.minimum))
   error.value = ''
   loading.value = true
   try {
@@ -113,7 +109,7 @@ async function requestContact(candidate: Candidate) {
 <template>
   <main class="mx-auto grid w-full max-w-[1240px] items-start gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(16rem,20rem)_minmax(0,1fr)]">
     <aside v-if="profile && catalog" class="panel hidden lg:block">
-      <MatchFilters v-model="filters" :profile="profile" :catalog="catalog" :periods="periods" />
+      <MatchFilters v-model="filters" :profile="profile" :catalog="catalog" />
     </aside>
     <section class="min-w-0 space-y-4" aria-labelledby="match-heading">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
@@ -124,10 +120,10 @@ async function requestContact(candidate: Candidate) {
       <div v-if="profile && catalog" class="flex min-w-0 items-center gap-2 lg:hidden">
         <button type="button" class="button button-primary shrink-0 rounded-full px-4" @click="sheet?.showModal()">{{ t('matches.filters') }}</button>
         <ul class="flex min-w-0 gap-2 overflow-x-auto py-1 text-sm">
-          <li v-if="!filters.allFields" class="summary-chip">{{ field(profile.field, catalog) }}</li>
-          <li class="summary-chip">{{ t(`regions.${filters.region}`) }}</li>
-          <li class="summary-chip">{{ t(`periods.${filters.preset}`) }}</li>
-          <li v-if="filters.preset !== 'any'" class="summary-chip">{{ t('matches.minimumValue', { months: filters.minimum }) }}</li>
+          <li v-for="code in filters.fields" :key="code" class="summary-chip">{{ field(code, catalog) }}</li>
+          <li class="summary-chip">{{ regionLabel(filters.region) }}</li>
+          <li class="summary-chip">{{ validPeriod ? dateSpan(filters) : t(isAnyTime(filters) ? 'matches.anyTime' : 'matches.incompletePeriod') }}</li>
+          <li v-if="validPeriod" class="summary-chip">{{ t('matches.minimumValue', { months: filters.minimum }) }}</li>
         </ul>
       </div>
 
@@ -207,7 +203,7 @@ async function requestContact(candidate: Candidate) {
           <button type="button" class="chip" @click="sheet?.close()">{{ t('common.close') }}</button>
         </div>
         <div class="min-h-0 overflow-y-auto px-5 py-2">
-          <MatchFilters v-model="filters" :profile="profile" :catalog="catalog" :periods="periods" />
+          <MatchFilters v-model="filters" :profile="profile" :catalog="catalog" />
         </div>
         <div class="shrink-0 border-t border-slate-200 p-4">
           <button type="button" class="button button-primary w-full px-4" @click="sheet?.close()">{{ t('matches.show', matches?.results.length ?? 0) }}</button>

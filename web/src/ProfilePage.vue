@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { api, APIError, json } from './api'
 import { basicDestinations, continentCodes, sameDestination, useExchangeLabels } from './exchange'
 import type { Catalog, Destination, Institution, Profile, Subdivision } from './exchange'
+import MonthRangeFields from './MonthRangeFields.vue'
 
 const { t, locale, country, continent, place, field, destination } = useExchangeLabels()
 const profile = ref<Profile>()
@@ -221,10 +222,8 @@ async function signOut() {
       <fieldset class="panel space-y-4">
         <legend class="px-2 font-semibold">{{ t('profile.exchange') }}</legend>
         <p id="optional-dates" class="text-sm text-slate-600">{{ t('profile.optionalDates') }}</p>
-        <div class="grid gap-4 sm:grid-cols-2">
-          <label class="block space-y-1.5 text-sm font-semibold"><span>{{ t('profile.from') }}</span><input v-model="profile.from" class="field text-base font-normal" type="month" :required="Boolean(profile.to)" aria-describedby="optional-dates"></label>
-          <label class="block space-y-1.5 text-sm font-semibold"><span>{{ t('profile.to') }}</span><input v-model="profile.to" class="field text-base font-normal" type="month" :min="profile.from" :required="Boolean(profile.from)" aria-describedby="optional-dates"></label>
-        </div>
+        <MonthRangeFields v-model:from="profile.from" v-model:to="profile.to" :from-label="t('profile.from')"
+          :to-label="t('profile.to')" described-by="optional-dates" class="sm:grid-cols-2" />
         <button v-if="profile.from || profile.to" type="button" class="header-link text-sm underline" @click="clearDates">{{ t('profile.clearDates') }}</button>
         <div role="group" aria-labelledby="destinations-label" aria-describedby="optional-destinations" class="space-y-2">
           <p id="destinations-label" class="text-sm font-semibold">{{ t('profile.destinations') }}</p>

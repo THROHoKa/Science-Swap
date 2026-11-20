@@ -22,12 +22,13 @@ func TestExchangeWorkflow(t *testing.T) {
 	}
 	tag := strings.ToLower(rand.Text())
 	email := "test-" + tag + "@example.org"
-	var institutions [2]int64
-	for index, country := range []string{"DE", "NL"} {
+	var institutions [3]int64
+	for index, location := range []struct{ country, continent string }{{"DE", "EU"}, {"NL", "EU"}, {"US", "NA"}} {
+		country := location.country
 		err := db.QueryRowContext(ctx, `
 			INSERT INTO "SSwap_institutions" (ror_id,name,types,status,country_code,continent_code,search_text,ror_release)
-			VALUES ($1,$2,'{education}','active',$3,'EU',$4,'test') RETURNING id`,
-			"https://ror.org/test-"+tag+"-"+country, "Test campus "+country, country, tag+" "+country).Scan(&institutions[index])
+			VALUES ($1,$2,'{education}','active',$3,$4,$5,'test') RETURNING id`,
+			"https://ror.org/test-"+tag+"-"+country, "Test campus "+country, country, location.continent, tag+" "+country).Scan(&institutions[index])
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -208,6 +209,54 @@ func TestExchangeWorkflow(t *testing.T) {
 	if len(matches(owner, "field=all&minimum=6")) != 0 {
 		t.Fatal("an open candidate met a minimum longer than the viewer's fixed period")
 	}
+
+	t.Run("independent search filters", func(t *testing.T) {
+		third := login(nil)
+		p3 := profileInput{Institution: institutions[2], Name: "North American candidate", Field: "021", From: "2098-07", To: "2098-12"}
+		request("PUT", "/api/profile", p3, third, http.StatusNoContent)
+		const fields = "field=071&field=021"
+		const anyTime = "&from=&to="
+
+		if got := matches(owner, fields+anyTime); len(got) != 2 {
+			t.Fatalf("any-time search should include both selected fields beyond the saved dates: %+v", got)
+		}
+		if got := matches(owner, "field=071"+anyTime); len(got) != 1 || got[0].Name != p2.Name {
+			t.Fatalf("removing a field should exclude that field's candidate: %+v", got)
+		}
+		if got := matches(owner, "field=all"+anyTime); len(got) != 2 {
+			t.Fatalf("clearing all fields should allow all candidates: %+v", got)
+		}
+		for _, region := range []string{"AF", "AN", "AS", "NA", "OC", "SA", "europe"} {
+			got := matches(owner, fields+anyTime+"&region="+region)
+			switch region {
+			case "NA":
+				if len(got) != 1 || got[0].Name != p3.Name {
+					t.Fatalf("North America search returned %+v", got)
+				}
+			case "europe":
+				if len(got) != 1 || got[0].Name != p2.Name {
+					t.Fatalf("Europe search returned %+v", got)
+				}
+			default:
+				if len(got) != 0 {
+					t.Fatalf("unexpected results in %s: %+v", region, got)
+				}
+			}
+		}
+		got := matches(owner, fields+"&region=NA&from=2098-09&to=2098-10")
+		if len(got) != 1 || got[0].OverlapFrom != "2098-09" || got[0].OverlapTo != "2098-10" {
+			t.Fatalf("custom period should override the saved availability in search: %+v", got)
+		}
+		if got := matches(owner, fields+"&region=NA&from=2098-01&to=2098-02"); len(got) != 0 {
+			t.Fatalf("custom period should exclude candidates outside the selected dates: %+v", got)
+		}
+		request("GET", "/api/matches?field=071&field=bad", nil, owner, http.StatusBadRequest)
+		request("GET", "/api/matches?from=2098-09&to=", nil, owner, http.StatusBadRequest)
+		if saved := readProfile(owner); saved["field"] != p1.Field || saved["from"] != p1.From || saved["to"] != p1.To {
+			t.Fatalf("changing search filters changed the saved profile: %+v", saved)
+		}
+	})
+
 	request("DELETE", "/api/session", nil, owner, http.StatusNoContent)
 	request("GET", "/api/profile", nil, owner, http.StatusUnauthorized)
 }

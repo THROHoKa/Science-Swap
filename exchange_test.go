@@ -112,6 +112,27 @@ func TestExchangeWorkflow(t *testing.T) {
 	}
 	p2 := profileInput{Institution: institutions[1], Name: "Other", Field: "071", From: "2097-12", To: "2098-06"}
 	request("PUT", "/api/profile", p2, other, http.StatusNoContent)
+	if _, err := db.ExecContext(ctx, `
+		UPDATE "SSwap_profiles" SET teaching_entries = NULL, teaching_areas = 'Legacy subject'
+		WHERE institution_id = $1`, institutions[1]); err != nil {
+		t.Fatal(err)
+	}
+	legacyAreas := readProfile(other)["teachingAreas"].([]any)
+	if len(legacyAreas) != 1 || legacyAreas[0].(map[string]any)["title"] != "Legacy subject" ||
+		legacyAreas[0].(map[string]any)["experience"] != nil {
+		t.Fatalf("legacy teaching text was not preserved: %+v", legacyAreas)
+	}
+	p2.TeachingAreas = []teachingArea{{Title: "Legacy subject"}}
+	request("PUT", "/api/profile", p2, other, http.StatusNoContent)
+	fullLecture, singleUnits := "full_lecture", "single_units"
+	p2.TeachingAreas = []teachingArea{{Title: "  Materials science  ", Experience: &fullLecture}, {Title: "Lab safety", Experience: &singleUnits}}
+	request("PUT", "/api/profile", p2, other, http.StatusNoContent)
+	badTeaching := p2
+	badTeaching.TeachingAreas = []teachingArea{{Title: "New subject without a level"}}
+	request("PUT", "/api/profile", badTeaching, other, http.StatusBadRequest)
+	invalidLevel := "not-a-level"
+	badTeaching.TeachingAreas[0].Experience = &invalidLevel
+	request("PUT", "/api/profile", badTeaching, other, http.StatusBadRequest)
 	if readProfile(owner)["name"] != "Owner" {
 		t.Fatal("saving another account changed the owner's profile")
 	}
@@ -134,6 +155,9 @@ func TestExchangeWorkflow(t *testing.T) {
 		w := request("GET", "/api/matches?"+filter, nil, cookie, http.StatusOK)
 		if strings.Contains(w.Body.String(), email) {
 			t.Fatal("match results exposed an email address")
+		}
+		if strings.Contains(w.Body.String(), `"teachingAreas"`) || strings.Contains(w.Body.String(), `"teaching"`) {
+			t.Fatal("match results exposed teaching areas")
 		}
 		var response struct{ Results []matchPreview }
 		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
@@ -158,12 +182,48 @@ func TestExchangeWorkflow(t *testing.T) {
 	if len(matches(owner, "field=all&region=dach")) != 0 {
 		t.Fatal("region search used saved destinations rather than the candidate's university location")
 	}
+	detailPath := "/api/matches/" + got[0].ID
+	request("GET", detailPath, nil, nil, http.StatusUnauthorized)
+	request("GET", detailPath, nil, other, http.StatusNotFound)
+	request("GET", "/api/matches/invalid", nil, owner, http.StatusNotFound)
+	request("GET", "/matches/"+got[0].ID, nil, owner, http.StatusOK)
+	readDetails := func() (details struct {
+		Name, Field, From, To string
+		TeachingAreas         []teachingArea
+		Sent, Received        bool
+	}) {
+		t.Helper()
+		w := request("GET", detailPath, nil, owner, http.StatusOK)
+		if strings.Contains(w.Body.String(), email) {
+			t.Fatal("profile details exposed an email address")
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &details); err != nil {
+			t.Fatal(err)
+		}
+		return details
+	}
+	details := readDetails()
+	if details.Name != p2.Name || details.Field != p2.Field || details.From != p2.From || details.To != p2.To ||
+		len(details.TeachingAreas) != 2 || details.TeachingAreas[0].Title != "Materials science" ||
+		details.TeachingAreas[0].Experience == nil || *details.TeachingAreas[0].Experience != fullLecture ||
+		details.TeachingAreas[1].Title != "Lab safety" || details.TeachingAreas[1].Experience == nil ||
+		*details.TeachingAreas[1].Experience != singleUnits {
+		t.Fatalf("unexpected profile details: %+v", details)
+	}
+	p2.TeachingAreas = nil
+	request("PUT", "/api/profile", p2, other, http.StatusNoContent)
+	if areas := readDetails().TeachingAreas; areas == nil || len(areas) != 0 {
+		t.Fatalf("clearing teaching areas should also remove them from the details page: %+v", areas)
+	}
 	request("PUT", "/api/interests/"+got[0].ID, nil, owner, http.StatusNoContent)
 	incoming := matches(other, "field=all")
 	if len(incoming) != 1 || !incoming[0].Received {
 		t.Fatalf("recipient did not see the contact request: %+v", incoming)
 	}
 	request("PUT", "/api/interests/"+incoming[0].ID, nil, other, http.StatusNoContent)
+	if details := readDetails(); !details.Sent || !details.Received {
+		t.Fatalf("profile details did not reflect mutual interest: %+v", details)
+	}
 	got = matches(owner, "field=all")
 	if len(got) != 1 || !got[0].Sent || !got[0].Received {
 		t.Fatalf("mutual interest was not recorded: %+v", got)

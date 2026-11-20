@@ -35,6 +35,7 @@ func (a api) register(mux *http.ServeMux) {
 	handle("GET /api/institutions", a.requireAccount(a.searchInstitutions))
 	handle("GET /api/subdivisions", a.requireAccount(a.listSubdivisions))
 	handle("GET /api/matches", a.requireAccount(a.getMatches))
+	handle("GET /api/matches/{candidate}", a.requireAccount(a.getMatchProfile))
 	handle("PUT /api/interests/{candidate}", a.requireAccount(a.saveInterest))
 }
 
@@ -52,13 +53,13 @@ func (a api) requireAccount(next func(http.ResponseWriter, *http.Request, string
 	}
 }
 
-func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
+func decodeJSON(w http.ResponseWriter, r *http.Request, dst any, limit int64) bool {
 	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil || mediaType != "application/json" {
 		apiError(w, http.StatusUnsupportedMediaType, "invalid_request")
 		return false
 	}
-	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10))
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, limit))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(dst); err != nil || decoder.Decode(new(any)) != io.EOF {
 		apiError(w, http.StatusBadRequest, "invalid_request")

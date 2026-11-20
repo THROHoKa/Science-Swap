@@ -83,15 +83,12 @@ func (a api) getMatches(w http.ResponseWriter, r *http.Request, id string) {
 			SELECT p.account_id AS id, p.name, upper(overlap.period)-lower(overlap.period) AS days,
 			jsonb_build_object(
 				'id', p.account_id, 'title', p.title, 'name', p.name, 'field', p.isced_code,
-				'teaching', p.teaching_areas, 'institution', `+institutionJSON+`, 'demo', account.is_demo,
+				'institution', `+institutionJSON+`, 'demo', account.is_demo,
 				'from', coalesce(to_char(lower(d.period), 'YYYY-MM'), ''),
 				'to', coalesce(to_char(upper(d.period)-1, 'YYYY-MM'), ''),
 				'overlapFrom', coalesce(to_char(lower(overlap.period), 'YYYY-MM'), ''),
 				'overlapTo', coalesce(to_char(upper(overlap.period)-1, 'YYYY-MM'), ''),
-				'preferences', coalesce((
-					SELECT jsonb_agg(jsonb_build_object('scope', f.scope, 'value', f.value) ORDER BY f.scope, f.value)
-					FROM "SSwap_preferences" f WHERE f.account_id = p.account_id
-				), '[]'::jsonb),
+				'preferences', `+profilePreferencesJSON+`,
 				'sent', sent.from_id IS NOT NULL, 'received', received.from_id IS NOT NULL
 			) AS item
 			FROM "SSwap_profiles" me
@@ -133,6 +130,43 @@ func (a api) getMatches(w http.ResponseWriter, r *http.Request, id string) {
 		To      string          `json:"to"`
 		Results json.RawMessage `json:"results"`
 	}{from, to, data})
+}
+
+func (a api) getMatchProfile(w http.ResponseWriter, r *http.Request, id string) {
+	candidate := r.PathValue("candidate")
+	var uuid pgtype.UUID
+	if err := uuid.Scan(candidate); err != nil {
+		apiError(w, http.StatusNotFound, "match_unavailable")
+		return
+	}
+	var data json.RawMessage
+	err := a.db.QueryRowContext(r.Context(), `
+		SELECT jsonb_build_object(
+			'id', p.account_id, 'name', p.name, 'title', p.title, 'field', p.isced_code,
+			'institution', `+institutionJSON+`, 'demo', account.is_demo,
+			'teachingAreas', `+teachingAreasJSON+`,
+			'from', coalesce(to_char(lower(d.period), 'YYYY-MM'), ''),
+			'to', coalesce(to_char(upper(d.period)-1, 'YYYY-MM'), ''),
+			'preferences', `+profilePreferencesJSON+`,
+			'sent', sent.from_id IS NOT NULL, 'received', received.from_id IS NOT NULL
+		)
+		FROM "SSwap_profiles" me
+		JOIN "SSwap_profiles" p ON p.account_id = $2::text::uuid
+		JOIN "SSwap_institutions" i ON i.id = p.institution_id AND i.status = 'active'
+		JOIN "SSwap_accounts" account ON account.id = p.account_id
+		LEFT JOIN "SSwap_availabilities" d ON d.account_id = p.account_id
+		LEFT JOIN "SSwap_interests" sent ON sent.from_id = me.account_id AND sent.to_id = p.account_id
+		LEFT JOIN "SSwap_interests" received ON received.from_id = p.account_id AND received.to_id = me.account_id
+		WHERE me.account_id = $1::text::uuid AND p.institution_id <> me.institution_id`, id, candidate).Scan(&data)
+	if errors.Is(err, sql.ErrNoRows) {
+		apiError(w, http.StatusNotFound, "match_unavailable")
+		return
+	}
+	if err != nil {
+		internalError(w, err)
+		return
+	}
+	respondJSON(w, http.StatusOK, data)
 }
 
 func (a api) saveInterest(w http.ResponseWriter, r *http.Request, id string) {

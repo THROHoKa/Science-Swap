@@ -24,6 +24,7 @@ func routes(db *sql.DB, static fs.FS) http.Handler {
 	mux.HandleFunc("GET /login", servePage)
 	mux.HandleFunc("GET /profile", servePage)
 	mux.HandleFunc("GET /matches", servePage)
+	mux.HandleFunc("GET /matches/{candidate}", servePage)
 	(api{db}).register(mux)
 
 	mux.HandleFunc("GET /api/version", func(w http.ResponseWriter, r *http.Request) {

@@ -1,17 +1,50 @@
 @import "tailwindcss";
 
-body {
-  background: radial-gradient(ellipse at top right, #dcebe6, transparent 60%), #f4f6f2;
-  color: #14262b;
+@font-face {
+  font-family: Inter;
+  src: url("/assets/fonts/inter-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
 }
 
-h1 {
-  font-family: Georgia, 'Times New Roman', serif;
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("/assets/fonts/space-grotesk-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500 700;
+  font-display: swap;
 }
 
-a:focus-visible,
-select:focus-visible,
-button:focus-visible {
-  outline: 2px solid #16745e;
-  outline-offset: 4px;
+@theme {
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", var(--font-sans);
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900;
+  }
+
+  :is(a, button, summary):focus-visible {
+    @apply outline-2 outline-offset-4 outline-indigo-600;
+  }
+}
+
+@layer components {
+  .button {
+    @apply inline-flex min-h-11 items-center justify-center rounded-xl py-2.5 text-center font-semibold;
+  }
+
+  .button-primary {
+    @apply bg-indigo-600 text-white hover:bg-indigo-700;
+  }
+
+  .button-secondary {
+    @apply border border-slate-300 bg-white text-slate-900 hover:bg-slate-100;
+  }
+
+  .header-link {
+    @apply inline-flex min-h-11 items-center rounded-lg text-slate-600 hover:text-indigo-800;
+  }
 }

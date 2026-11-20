@@ -1,12 +1,55 @@
 {
   "app": {
-    "name": "Science Swap",
-    "greeting": "Hello, world!"
+    "name": "Science Swap"
   },
   "language": {
     "label": "Language",
     "en": "English",
-    "de": "Deutsch"
+    "de": "Deutsch",
+    "short": { "en": "EN", "de": "DE" }
+  },
+  "home": {
+    "navigation": "Main navigation",
+    "eyebrow": "University exchange",
+    "headline": "Spend a semester somewhere new.",
+    "description": "Find a partner at another university. Science Swap connects people in similar fields whose dates and preferred destinations work for both.",
+    "howItWorks": "How it works",
+    "signIn": "Sign in",
+    "createProfile": "Create a profile",
+    "createProfileNow": "Create your profile",
+    "entry": {
+      "unavailable": "Accounts are coming soon. You can already explore how an exchange works on this page.",
+      "close": "Close"
+    },
+    "steps": {
+      "profile": {
+        "title": "Create a profile",
+        "description": "Enter your university and field of study. Your university tells us your city, country, and region."
+      },
+      "preferences": {
+        "title": "Choose dates and destinations",
+        "description": "Choose when you’re available for an exchange and add the countries or regions you’d like to visit."
+      },
+      "matches": {
+        "title": "Find an exchange partner",
+        "description": "See whose dates and destinations fit yours. When you’re both interested, you can get in touch."
+      }
+    },
+    "example": {
+      "heading": "Example match",
+      "status": "Mutual interest",
+      "homeUniversity": "TH Rosenheim",
+      "homeRegion": "Bavaria",
+      "partnerUniversity": "TU Delft",
+      "partnerRegion": "South Holland",
+      "location": "{region}, {country}",
+      "you": "You",
+      "partner": "Partner",
+      "overlap": "Shared availability",
+      "overlapDescription": "{overlap} of {requested} months",
+      "months": "months",
+      "caption": "Fictional exchange example."
+    }
   },
   "attribution": {
     "text": "Location data from {geonames} ({geoLicense}). Institution data from {ror} ({rorLicense}).",

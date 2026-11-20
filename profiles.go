@@ -56,11 +56,16 @@ func (a api) getProfile(w http.ResponseWriter, r *http.Request, id string) {
 	respondJSON(w, http.StatusOK, data)
 }
 
-func monthRange(from, to string) (time.Time, time.Time, bool) {
+func optionalMonthRange(from, to string) (string, string, bool) {
+	if from == "" && to == "" {
+		return "", "", true
+	}
 	start, startErr := time.Parse("2006-01", from)
 	end, endErr := time.Parse("2006-01", to)
-	valid := startErr == nil && endErr == nil && start.Year() > 0 && end.Year() < 9999 && !end.Before(start)
-	return start, end.AddDate(0, 1, 0), valid
+	if startErr != nil || endErr != nil || start.Year() < 1 || end.Year() >= 9999 || end.Before(start) {
+		return "", "", false
+	}
+	return start.Format(time.DateOnly), end.AddDate(0, 1, 0).Format(time.DateOnly), true
 }
 
 func (a api) saveProfile(w http.ResponseWriter, r *http.Request, id string) {
@@ -75,7 +80,7 @@ func (a api) saveProfile(w http.ResponseWriter, r *http.Request, id string) {
 		apiError(w, http.StatusBadRequest, "invalid_profile")
 		return
 	}
-	start, end, valid := monthRange(p.From, p.To)
+	start, end, valid := optionalMonthRange(p.From, p.To)
 	if !valid {
 		apiError(w, http.StatusBadRequest, "invalid_period")
 		return
@@ -120,10 +125,14 @@ func (a api) saveProfile(w http.ResponseWriter, r *http.Request, id string) {
 		apiError(w, http.StatusBadRequest, "invalid_reference")
 		return
 	}
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO "SSwap_availabilities" VALUES ($1::text::uuid, daterange($2::text::date, $3::text::date))
-		ON CONFLICT (account_id) DO UPDATE SET period = excluded.period`,
-		id, start.Format(time.DateOnly), end.Format(time.DateOnly)); err != nil {
+	if start == "" {
+		_, err = tx.ExecContext(ctx, `DELETE FROM "SSwap_availabilities" WHERE account_id = $1::text::uuid`, id)
+	} else {
+		_, err = tx.ExecContext(ctx, `
+			INSERT INTO "SSwap_availabilities" VALUES ($1::text::uuid, daterange($2::text::date, $3::text::date))
+			ON CONFLICT (account_id) DO UPDATE SET period = excluded.period`, id, start, end)
+	}
+	if err != nil {
 		internalError(w, err)
 		return
 	}

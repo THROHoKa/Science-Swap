@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { regionOptions, useExchangeLabels } from './exchange'
+import { hasPeriod, regionOptions, useExchangeLabels } from './exchange'
 import type { Catalog, MatchFilter, Period, Profile } from './exchange'
 
 defineProps<{
@@ -37,10 +37,10 @@ const { t, place, field, month } = useExchangeLabels()
       <button v-for="period in periods" :key="period.key" type="button" class="chip flex w-full flex-col items-start rounded-lg p-2 text-left"
         :aria-pressed="model.preset === period.key" @click="model = { ...model, preset: period.key }">
         <span class="font-semibold">{{ t(`periods.${period.key}`) }}</span>
-        <span class="text-xs text-slate-600">{{ month(period.from) }} – {{ month(period.to) }}</span>
+        <span v-if="hasPeriod(period)" class="text-xs text-slate-600">{{ month(period.from) }} – {{ month(period.to) }}</span>
       </button>
     </fieldset>
-    <fieldset class="space-y-2">
+    <fieldset v-if="model.preset !== 'any'" class="space-y-2">
       <legend class="mb-2 text-sm font-semibold">{{ t('matches.minimum') }}</legend>
       <div class="flex flex-wrap gap-2">
         <button v-for="minimum in [1, 3, 6]" :key="minimum" type="button" class="chip flex-1 justify-center whitespace-nowrap"

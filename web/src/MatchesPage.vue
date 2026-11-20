@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { api, APIError } from './api'
-import { academicPresets, academicYear, indexMonth, monthIndex, useExchangeLabels } from './exchange'
+import { academicPresets, academicYear, hasPeriod, indexMonth, monthIndex, useExchangeLabels } from './exchange'
 import type { Candidate, Catalog, MatchFilter, Matches, Period, Profile } from './exchange'
 import MatchFilters from './MatchFilters.vue'
 
@@ -17,7 +17,8 @@ const filters = ref<MatchFilter>({ allFields: false, region: 'world', preset: 's
 const samePeriod = (a: Period, b: Period) => a.from === b.from && a.to === b.to
 const periods = computed(() => {
   const p = profile.value
-  if (!p?.from || !p.to) return []
+  if (!p) return []
+  if (!hasPeriod(p)) return [{ key: 'any', from: '', to: '' }, ...academicPresets(academicYear())]
   const [year, monthNumber] = p.from.split('-').map(Number)
   const anchor = year - Number(monthNumber < 9)
   const presets = academicPresets(anchor || academicYear())
@@ -27,7 +28,7 @@ const periods = computed(() => {
 onMounted(async () => {
   try {
     const [saved, options] = await Promise.all([api<Profile>('/profile'), api<Catalog>('/catalog')])
-    if (!saved.institution || !saved.from) {
+    if (!saved.institution) {
       error.value = 'profile_required'
       loading.value = false
       return
@@ -48,8 +49,9 @@ watch([profile, filters], async ([p, f], _, cleanup) => {
   const selected = periods.value.find(period => period.key === f.preset) ?? p
   const query = new URLSearchParams({
     from: selected.from, to: selected.to, region: f.region,
-    field: f.allFields ? 'all' : 'same', minimum: String(f.minimum),
+    field: f.allFields ? 'all' : 'same',
   })
+  if (hasPeriod(selected)) query.set('minimum', String(f.minimum))
   error.value = ''
   loading.value = true
   try {
@@ -63,14 +65,16 @@ watch([profile, filters], async ([p, f], _, cleanup) => {
 
 const axis = computed(() => {
   const m = matches.value
-  if (!m) return { first: 0, span: 1, ticks: [] as string[] }
-  const first = Math.min(monthIndex(m.from), ...m.results.map(result => monthIndex(result.from)))
-  const last = Math.max(monthIndex(m.to), ...m.results.map(result => monthIndex(result.to)))
+  const dated = m ? [m, ...m.results].filter(hasPeriod) : []
+  if (!dated.length) return { first: 0, span: 1, ticks: [] as string[] }
+  const first = Math.min(...dated.map(period => monthIndex(period.from)))
+  const last = Math.max(...dated.map(period => monthIndex(period.to)))
   const ticks = [...new Set([first, Math.round((first + last) / 2), last])].map(indexMonth)
   return { first, span: last - first + 1, ticks }
 })
 
 function bar(period: Period) {
+  if (!hasPeriod(period)) return { '--bar-start': '0%', '--bar-width': '100%' }
   const first = monthIndex(period.from)
   return {
     '--bar-start': (first - axis.value.first) * 100 / axis.value.span + '%',
@@ -81,6 +85,15 @@ function bar(period: Period) {
 const initials = (name: string) => name.trim().split(/\s+/).slice(0, 2).map(part => [...part][0]?.toUpperCase() ?? '').join('')
 const months = (from: string, to: string) => monthIndex(to) - monthIndex(from) + 1
 const dateSpan = (period: Period) => `${month(period.from)} – ${month(period.to)}`
+const overlapPeriod = (candidate: Candidate): Period => ({ from: candidate.overlapFrom, to: candidate.overlapTo })
+
+function availability(candidate: Candidate, requested: Period) {
+  const available = hasPeriod(candidate) ? t('matches.available', { period: dateSpan(candidate) }) : t('matches.flexible')
+  const overlap = overlapPeriod(candidate)
+  return hasPeriod(requested) && hasPeriod(overlap)
+    ? t('matches.availability', { available, shared: dateSpan(overlap) })
+    : available
+}
 
 async function requestContact(candidate: Candidate) {
   if (pending.value.has(candidate.id)) return
@@ -114,7 +127,7 @@ async function requestContact(candidate: Candidate) {
           <li v-if="!filters.allFields" class="summary-chip">{{ field(profile.field, catalog) }}</li>
           <li class="summary-chip">{{ t(`regions.${filters.region}`) }}</li>
           <li class="summary-chip">{{ t(`periods.${filters.preset}`) }}</li>
-          <li class="summary-chip">{{ t('matches.minimumValue', { months: filters.minimum }) }}</li>
+          <li v-if="filters.preset !== 'any'" class="summary-chip">{{ t('matches.minimumValue', { months: filters.minimum }) }}</li>
         </ul>
       </div>
 
@@ -125,8 +138,9 @@ async function requestContact(candidate: Candidate) {
       <p v-if="loading" class="text-sm text-slate-600" role="status">{{ t('common.loading') }}</p>
 
       <template v-if="matches && catalog && profile">
-        <div class="panel p-4" aria-hidden="true">
-          <div class="grid grid-cols-[3rem_1fr] items-center gap-x-3 gap-y-1 text-sm">
+        <div v-if="axis.ticks.length || !hasPeriod(matches)" class="panel p-4">
+          <p v-if="!hasPeriod(matches)" class="text-sm font-semibold">{{ t('matches.anyDates') }}</p>
+          <div v-if="axis.ticks.length" class="grid grid-cols-[3rem_1fr] items-center gap-x-3 gap-y-1 text-sm" aria-hidden="true">
             <span class="font-semibold">{{ t('matches.you') }}</span>
             <div class="track"><span class="range bg-indigo-400" :style="bar(matches)"></span></div>
             <div class="col-start-2 flex justify-between gap-1 text-xs text-slate-600">
@@ -145,10 +159,14 @@ async function requestContact(candidate: Candidate) {
                 <p class="text-sm text-slate-600">{{ place(candidate.institution) }}</p>
               </div>
             </div>
-            <div class="min-w-16 shrink-0 space-y-1 text-right sm:min-w-32">
+            <div v-if="hasPeriod(matches) && candidate.overlapFrom" class="min-w-16 shrink-0 space-y-1 text-right sm:min-w-32">
               <p class="font-display text-2xl leading-none font-bold sm:text-3xl">{{ months(candidate.overlapFrom, candidate.overlapTo) }}/{{ months(matches.from, matches.to) }}</p>
               <p class="text-xs text-slate-600">{{ t('matches.overlap') }}</p>
               <progress class="overlap-progress hidden w-full sm:block" :value="months(candidate.overlapFrom, candidate.overlapTo)" :max="months(matches.from, matches.to)" :aria-label="t('matches.overlap')"></progress>
+            </div>
+            <div v-else-if="hasPeriod(candidate)" class="min-w-16 shrink-0 space-y-1 text-right sm:min-w-32">
+              <p class="font-display text-2xl leading-none font-bold sm:text-3xl">{{ months(candidate.from, candidate.to) }}</p>
+              <p class="text-xs text-slate-600">{{ t('matches.availableMonths') }}</p>
             </div>
           </div>
           <div class="flex flex-wrap gap-1.5 text-xs">
@@ -158,20 +176,20 @@ async function requestContact(candidate: Candidate) {
             <span v-if="candidate.preferences.length" class="summary-chip bg-slate-100 text-slate-700">{{ t('matches.seeks', { places: candidate.preferences.map(item => destination(item, catalog!)).join(', ') }) }}</span>
           </div>
           <p v-if="candidate.teaching" class="wrap-break-word text-sm text-slate-600">{{ candidate.teaching }}</p>
-          <div class="grid grid-cols-[3rem_1fr] items-center gap-x-3 gap-y-2 text-sm text-slate-600" aria-hidden="true">
+          <div v-if="axis.ticks.length" class="grid grid-cols-[3rem_1fr] items-center gap-x-3 gap-y-2 text-sm text-slate-600" aria-hidden="true">
             <span>{{ t('matches.you') }}</span>
             <div class="track">
               <span class="range bg-indigo-200" :style="bar(matches)"></span>
-              <span class="range bg-amber-500" :style="bar({ from: candidate.overlapFrom, to: candidate.overlapTo })"></span>
+              <span v-if="candidate.overlapFrom" class="range bg-amber-500" :style="bar(overlapPeriod(candidate))"></span>
             </div>
             <span>{{ initials(candidate.name) }}</span>
             <div class="track">
               <span class="range bg-slate-300" :style="bar(candidate)"></span>
-              <span class="range bg-amber-500" :style="bar({ from: candidate.overlapFrom, to: candidate.overlapTo })"></span>
+              <span v-if="candidate.overlapFrom" class="range bg-amber-500" :style="bar(overlapPeriod(candidate))"></span>
             </div>
           </div>
           <div class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
-            <p class="text-sm text-slate-600">{{ t('matches.availability', { period: dateSpan(candidate), shared: dateSpan({ from: candidate.overlapFrom, to: candidate.overlapTo }) }) }}</p>
+            <p class="text-sm text-slate-600">{{ availability(candidate, matches) }}</p>
             <p v-if="candidate.sent && candidate.received" class="text-sm font-semibold text-indigo-800">{{ t('matches.mutual') }}</p>
             <p v-else-if="candidate.sent" class="text-sm font-semibold text-indigo-800">{{ t('matches.sent') }}</p>
             <button v-else type="button" class="button button-primary w-full px-4 disabled:opacity-50 sm:w-auto" :disabled="pending.has(candidate.id)" @click="requestContact(candidate)">

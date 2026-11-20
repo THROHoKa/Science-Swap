@@ -6,7 +6,6 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -48,8 +47,9 @@ func (a api) getMatches(w http.ResponseWriter, r *http.Request, id string) {
 	}
 	var savedFrom, savedTo string
 	err := a.db.QueryRowContext(r.Context(), `
-		SELECT to_char(lower(period), 'YYYY-MM'), to_char(upper(period)-1, 'YYYY-MM')
-		FROM "SSwap_availabilities" WHERE account_id = $1::text::uuid`, id).Scan(&savedFrom, &savedTo)
+		SELECT coalesce(to_char(lower(d.period), 'YYYY-MM'), ''), coalesce(to_char(upper(d.period)-1, 'YYYY-MM'), '')
+		FROM "SSwap_profiles" p LEFT JOIN "SSwap_availabilities" d USING (account_id)
+		WHERE p.account_id = $1::text::uuid`, id).Scan(&savedFrom, &savedTo)
 	if errors.Is(err, sql.ErrNoRows) {
 		apiError(w, http.StatusConflict, "profile_required")
 		return
@@ -61,22 +61,25 @@ func (a api) getMatches(w http.ResponseWriter, r *http.Request, id string) {
 	if from == "" && to == "" {
 		from, to = savedFrom, savedTo
 	}
-	start, end, valid := monthRange(from, to)
+	start, end, valid := optionalMonthRange(from, to)
 	if !valid {
 		apiError(w, http.StatusBadRequest, "invalid_period")
 		return
 	}
 	var data json.RawMessage
 	err = a.db.QueryRowContext(r.Context(), `
-		WITH requested AS (SELECT daterange($2::text::date, $3::text::date) AS period),
+		WITH requested AS (
+			SELECT CASE WHEN $2::text <> '' THEN daterange($2::text::date, $3::text::date) END AS period
+		),
 		results AS (
 			SELECT p.account_id AS id, p.name, upper(overlap.period)-lower(overlap.period) AS days,
 			jsonb_build_object(
 				'id', p.account_id, 'title', p.title, 'name', p.name, 'field', p.isced_code,
 				'teaching', p.teaching_areas, 'institution', `+institutionJSON+`, 'demo', account.is_demo,
-				'from', to_char(lower(d.period), 'YYYY-MM'), 'to', to_char(upper(d.period)-1, 'YYYY-MM'),
-				'overlapFrom', to_char(lower(overlap.period), 'YYYY-MM'),
-				'overlapTo', to_char(upper(overlap.period)-1, 'YYYY-MM'),
+				'from', coalesce(to_char(lower(d.period), 'YYYY-MM'), ''),
+				'to', coalesce(to_char(upper(d.period)-1, 'YYYY-MM'), ''),
+				'overlapFrom', coalesce(to_char(lower(overlap.period), 'YYYY-MM'), ''),
+				'overlapTo', coalesce(to_char(upper(overlap.period)-1, 'YYYY-MM'), ''),
 				'preferences', (
 					SELECT jsonb_agg(jsonb_build_object('scope', f.scope, 'value', f.value) ORDER BY f.scope, f.value)
 					FROM "SSwap_preferences" f WHERE f.account_id = p.account_id
@@ -86,22 +89,31 @@ func (a api) getMatches(w http.ResponseWriter, r *http.Request, id string) {
 			FROM "SSwap_profiles" me
 			JOIN "SSwap_institutions" home ON home.id = me.institution_id
 			CROSS JOIN requested
-			JOIN "SSwap_availabilities" d ON d.period && requested.period AND d.account_id <> me.account_id
-			JOIN "SSwap_profiles" p ON p.account_id = d.account_id AND p.institution_id <> me.institution_id
+			JOIN "SSwap_profiles" p ON p.account_id <> me.account_id AND p.institution_id <> me.institution_id
+			LEFT JOIN "SSwap_availabilities" d ON d.account_id = p.account_id
 			JOIN "SSwap_accounts" account ON account.id = p.account_id
 			JOIN "SSwap_institutions" i ON i.id = p.institution_id AND i.status = 'active'
 			LEFT JOIN "SSwap_interests" sent ON sent.from_id = me.account_id AND sent.to_id = p.account_id
 			LEFT JOIN "SSwap_interests" received ON received.from_id = p.account_id AND received.to_id = me.account_id
-			CROSS JOIN LATERAL (SELECT d.period * requested.period AS period) overlap
+			CROSS JOIN LATERAL (
+				SELECT CASE
+					WHEN d.period IS NULL THEN requested.period
+					WHEN requested.period IS NULL THEN d.period
+					ELSE d.period * requested.period
+				END AS period
+			) overlap
 			WHERE me.account_id = $1::text::uuid
 			  AND ($4::boolean OR p.isced_code = me.isced_code)
 			  AND sswap_region_contains($5, $6, i.country_code, i.continent_code, i.subdivision_code)
-			  AND upper(overlap.period) >= lower(overlap.period) + make_interval(months => $7)
+			  AND (requested.period IS NULL OR (
+				(d.period IS NULL OR d.period && requested.period)
+				AND upper(overlap.period) >= lower(overlap.period) + make_interval(months => $7)
+			  ))
 			  AND `+reciprocalRegions+`
-			ORDER BY days DESC, p.name, p.account_id LIMIT 200
+			ORDER BY days DESC NULLS LAST, p.name, p.account_id LIMIT 200
 		)
-		SELECT coalesce(jsonb_agg(item ORDER BY days DESC, name, id), '[]'::jsonb) FROM results`,
-		id, start.Format(time.DateOnly), end.Format(time.DateOnly), query.Get("field") == "all", scope, value, minimum).Scan(&data)
+		SELECT coalesce(jsonb_agg(item ORDER BY days DESC NULLS LAST, name, id), '[]'::jsonb) FROM results`,
+		id, start, end, query.Get("field") == "all", scope, value, minimum).Scan(&data)
 	if err != nil {
 		internalError(w, err)
 		return

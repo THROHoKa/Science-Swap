@@ -2,8 +2,6 @@
 import { useI18n } from 'vue-i18n'
 import MatchExample from './MatchExample.vue'
 
-defineEmits<{ createProfile: [] }>()
-
 const { t } = useI18n()
 const steps = ['profile', 'preferences', 'matches'] as const
 </script>
@@ -25,9 +23,9 @@ const steps = ['profile', 'preferences', 'matches'] as const
           {{ t('home.description') }}
         </p>
         <div class="flex flex-wrap gap-3 pt-2">
-          <button type="button" class="button button-primary px-[22px]" @click="$emit('createProfile')">
+          <a href="/login" class="button button-primary px-[22px]">
             {{ t('home.createProfileNow') }}
-          </button>
+          </a>
           <a class="button button-secondary px-[22px]" href="#how-it-works">
             {{ t('home.howItWorks') }}
           </a>

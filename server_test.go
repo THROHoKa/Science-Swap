@@ -63,10 +63,17 @@ func TestHelloWorld(t *testing.T) {
 		t.Fatal(err)
 	}
 	handler := routes(db, static)
-	page := httptest.NewRecorder()
-	handler.ServeHTTP(page, httptest.NewRequest(http.MethodGet, "/", nil))
-	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "/assets/") {
-		t.Fatalf("expected embedded frontend, got %d with body %q", page.Code, page.Body)
+	for _, path := range []string{"/", "/login", "/profile"} {
+		page := httptest.NewRecorder()
+		handler.ServeHTTP(page, httptest.NewRequest(http.MethodGet, path, nil))
+		if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "/assets/") {
+			t.Fatalf("%s: expected embedded frontend, got %d with body %q", path, page.Code, page.Body)
+		}
+	}
+	missing := httptest.NewRecorder()
+	handler.ServeHTTP(missing, httptest.NewRequest(http.MethodGet, "/missing", nil))
+	if missing.Code != http.StatusNotFound {
+		t.Fatalf("unknown path: expected HTTP 404, got %d", missing.Code)
 	}
 
 	version := httptest.NewRecorder()

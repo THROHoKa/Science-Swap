@@ -17,10 +17,6 @@
     "signIn": "Anmelden",
     "createProfile": "Profil anlegen",
     "createProfileNow": "Jetzt Profil anlegen",
-    "entry": {
-      "unavailable": "Benutzerkonten sind in Vorbereitung. Wie der Austausch funktioniert, erfährst du schon auf dieser Seite.",
-      "close": "Schließen"
-    },
     "steps": {
       "profile": {
         "title": "Profil anlegen",
@@ -50,6 +46,26 @@
       "months": "Monate",
       "caption": "Fiktives Austauschbeispiel."
     }
+  },
+  "login": {
+    "pageTitle": "Anmelden · Science Swap",
+    "title": "Anmelden oder registrieren",
+    "description": "Gib eine E-Mail-Adresse ein, um den Ablauf auszuprobieren.",
+    "email": "E-Mail-Adresse",
+    "placeholder": "vorname.nachname{'@'}example.org",
+    "continue": "Weiter",
+    "demo": "Demo-Modus. Das Demo-Profil ist in diesem Tab verfügbar. Die Anmeldung per E-Mail-Link folgt später.",
+    "error": {
+      "required": "Gib eine E-Mail-Adresse ein.",
+      "invalid": "Gib eine gültige E-Mail-Adresse ein.",
+      "storage": "Dein Browser blockiert den Sitzungsspeicher. Erlaube ihn, um die Demo zu starten."
+    }
+  },
+  "demoProfile": {
+    "pageTitle": "Demo-Profil · Science Swap",
+    "title": "Dein Demo-Profil",
+    "description": "Die Demo ist gestartet. Das Profilformular folgt in einem weiteren Schritt.",
+    "leave": "Demo beenden"
   },
   "attribution": {
     "text": "Standortdaten von {geonames} ({geoLicense}). Hochschuldaten von {ror} ({rorLicense}).",

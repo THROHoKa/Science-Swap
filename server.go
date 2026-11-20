@@ -18,6 +18,11 @@ func routes(db *sql.DB, static fs.FS) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("GET /{$}", http.FileServerFS(static))
 	mux.Handle("GET /assets/", http.FileServerFS(static))
+	servePage := func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFileFS(w, r, static, "index.html")
+	}
+	mux.HandleFunc("GET /login", servePage)
+	mux.HandleFunc("GET /profile", servePage)
 
 	mux.HandleFunc("GET /api/version", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)

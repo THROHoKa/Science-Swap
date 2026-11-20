@@ -1,12 +1,55 @@
 {
   "app": {
-    "name": "Science Swap",
-    "greeting": "Hallo, Welt!"
+    "name": "Science Swap"
   },
   "language": {
     "label": "Sprache",
     "en": "English",
-    "de": "Deutsch"
+    "de": "Deutsch",
+    "short": { "en": "EN", "de": "DE" }
+  },
+  "home": {
+    "navigation": "Hauptnavigation",
+    "eyebrow": "Hochschulaustausch",
+    "headline": "Ein Semester woanders.",
+    "description": "Finde jemanden für einen Austausch an einer anderen Hochschule. Fachgebiet, Zeitraum und Wunschziele sollen für beide passen.",
+    "howItWorks": "So funktioniert’s",
+    "signIn": "Anmelden",
+    "createProfile": "Profil anlegen",
+    "createProfileNow": "Jetzt Profil anlegen",
+    "entry": {
+      "unavailable": "Benutzerkonten sind in Vorbereitung. Wie der Austausch funktioniert, erfährst du schon auf dieser Seite.",
+      "close": "Schließen"
+    },
+    "steps": {
+      "profile": {
+        "title": "Profil anlegen",
+        "description": "Gib deine Hochschule und dein Fachgebiet ein. Stadt, Land und Region ergeben sich aus der Hochschule."
+      },
+      "preferences": {
+        "title": "Zeitraum und Ziele wählen",
+        "description": "Wähle, wann du Zeit für einen Austausch hast und welche Länder oder Regionen für dich infrage kommen."
+      },
+      "matches": {
+        "title": "Eine Person für den Austausch finden",
+        "description": "Sieh, wessen Zeitraum und Wunschziele zu deinen passen. Bei gegenseitigem Interesse könnt ihr Kontakt aufnehmen."
+      }
+    },
+    "example": {
+      "heading": "Beispiel-Match",
+      "status": "Beide interessiert",
+      "homeUniversity": "TH Rosenheim",
+      "homeRegion": "Bayern",
+      "partnerUniversity": "TU Delft",
+      "partnerRegion": "Südholland",
+      "location": "{region}, {country}",
+      "you": "Du",
+      "partner": "Gegenüber",
+      "overlap": "Gemeinsamer Zeitraum",
+      "overlapDescription": "{overlap} von {requested} Monaten",
+      "months": "Monate",
+      "caption": "Fiktives Austauschbeispiel."
+    }
   },
   "attribution": {
     "text": "Standortdaten von {geonames} ({geoLicense}). Hochschuldaten von {ror} ({rorLicense}).",

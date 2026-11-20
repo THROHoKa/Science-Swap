@@ -2,5 +2,6 @@
 /.cache/
 /bin/
 /data/
+/specs/screenshots/
 /web/dist/
 /web/node_modules/

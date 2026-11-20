@@ -1,0 +1,23 @@
+{
+  "name": "science-swap-web",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "vue": "^3.5.46",
+    "vue-i18n": "^11.4.23"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@vitejs/plugin-vue": "^6.0.11",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.16"
+  }
+}

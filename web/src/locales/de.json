@@ -1,0 +1,17 @@
+{
+  "app": {
+    "name": "Science Swap",
+    "greeting": "Hallo, Welt!"
+  },
+  "language": {
+    "label": "Sprache",
+    "en": "English",
+    "de": "Deutsch"
+  },
+  "database": {
+    "label": "PostgreSQL-Version",
+    "loading": "Datenbank wird geprüft…",
+    "unavailable": "Die Datenbankversion ist nicht verfügbar.",
+    "retry": "Erneut versuchen"
+  }
+}

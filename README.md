@@ -1,13 +1,29 @@
 # Science Swap
 
-Science Swap is a planned web app that helps academics find a partner at another university for a semester exchange. The proposed matching workflow uses academic field, overlapping availability, and preferred region to suggest potential partners. An exchange match requires interest from both people.
+Science Swap is a web app for finding a partner at another university for a semester exchange. The planned matching workflow uses academic field, overlapping availability, and preferred regions. An exchange match requires interest from both people.
 
-## Project status
+The starter app displays the version of the PostgreSQL server it is connected to. It serves the Vue interface and API from a single Go binary.
 
-The project is in the planning stage. Application code, database migrations, and local run commands are still to come.
+## Local development
 
-## Planned stack
+Use Go 1.26 or newer, Node.js 24, GNU Make, and PostgreSQL 17 or newer.
 
-- **Backend** — Go with `net/http`, PostgreSQL 17 or newer, `pgx` for database access, and `goose` for migrations.
-- **Frontend** — Vue 3, TypeScript, Vite, and Tailwind CSS, with German and English interfaces.
-- **Deployment** — A single Go binary with the frontend embedded, packaged in a Docker container for Fly.io in Frankfurt.
+Create `faculty_swap_dev` and `faculty_swap_test` with `createdb` if they are missing, then copy `.env.example` to `.env` and set both connection strings. With the local Homebrew server and Unix-socket peer authentication, use these values:
+
+```sh
+DATABASE_URL='postgres:///faculty_swap_dev?host=/tmp'
+TEST_DATABASE_URL='postgres:///faculty_swap_test?host=/tmp'
+```
+
+| Command | What it does |
+| --- | --- |
+| `make db-migrate` | Applies Goose migrations to `DATABASE_URL` |
+| `make dev` | Builds and serves the app at `http://127.0.0.1:8080` |
+| `make test` | Checks translation keys and exercises the API and migrations against `faculty_swap_test` |
+| `make build` | Writes the self-contained app to `bin/science-swap` |
+
+## Deployment
+
+The multi-stage Dockerfile uses Node.js 24 to build Vue, then embeds the result and migrations in the Go binary. `fly.toml` targets Frankfurt (`fra`) and runs migrations before release. The Fly app needs a PostgreSQL 17+ connection in its `DATABASE_URL` secret.
+
+The intended deployment automation is a GitHub Actions workflow that deploys to Fly.io after changes land on `main`.

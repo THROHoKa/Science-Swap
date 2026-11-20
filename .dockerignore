@@ -1,0 +1,8 @@
+.env
+.git
+.cache
+bin
+specs
+*:Zone.Identifier
+web/dist
+web/node_modules

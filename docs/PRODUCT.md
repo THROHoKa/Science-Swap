@@ -5,8 +5,8 @@ Science Swap helps people find a partner at another university for a semester ex
 ## Core workflow
 
 1. Create a profile with your university and ISCED-F field of study.
-2. Select one or more preferred destination regions. You can leave your available dates open.
-3. Review candidates at other universities. Suggestions use compatible fields of study, overlapping availability, and each participant's destination preferences.
+2. Add available dates and preferred destinations if you want to share them on your profile.
+3. Review candidates at other universities. Suggestions span all regions by default. Use the region filter to narrow results independently of saved destinations.
 4. Express interest in a candidate. A match forms when both people express interest.
 5. Contact a mutual match by email. A participant can send a message through the service and choose which personal details to include, including whether to share a reply address. The recipient can make their own sharing choices when responding.
 
@@ -14,7 +14,7 @@ Science Swap helps people find a partner at another university for a semester ex
 
 - Accounts and exchange profiles with open eligibility.
 - University lookup and bilingual ISCED-F field labels.
-- Availability periods and multiple preferred destination regions.
+- Optional availability periods and multiple optional preferred destination regions.
 - Candidate suggestions, expressions of interest, and mutual matches.
 - Email contact after a mutual match, with email address sharing opt-in.
 - German and English interfaces.

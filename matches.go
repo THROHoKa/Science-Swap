@@ -10,16 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const reciprocalRegions = `
-	EXISTS (
-		SELECT 1 FROM "SSwap_preferences" f WHERE f.account_id = me.account_id
-		  AND sswap_region_contains(f.scope, f.value, i.country_code, i.continent_code, i.subdivision_code)
-	)
-	AND EXISTS (
-		SELECT 1 FROM "SSwap_preferences" f WHERE f.account_id = p.account_id
-		  AND sswap_region_contains(f.scope, f.value, home.country_code, home.continent_code, home.subdivision_code)
-	)`
-
 func (a api) getMatches(w http.ResponseWriter, r *http.Request, id string) {
 	query := r.URL.Query()
 	from, to := query.Get("from"), query.Get("to")
@@ -80,14 +70,13 @@ func (a api) getMatches(w http.ResponseWriter, r *http.Request, id string) {
 				'to', coalesce(to_char(upper(d.period)-1, 'YYYY-MM'), ''),
 				'overlapFrom', coalesce(to_char(lower(overlap.period), 'YYYY-MM'), ''),
 				'overlapTo', coalesce(to_char(upper(overlap.period)-1, 'YYYY-MM'), ''),
-				'preferences', (
+				'preferences', coalesce((
 					SELECT jsonb_agg(jsonb_build_object('scope', f.scope, 'value', f.value) ORDER BY f.scope, f.value)
 					FROM "SSwap_preferences" f WHERE f.account_id = p.account_id
-				),
+				), '[]'::jsonb),
 				'sent', sent.from_id IS NOT NULL, 'received', received.from_id IS NOT NULL
 			) AS item
 			FROM "SSwap_profiles" me
-			JOIN "SSwap_institutions" home ON home.id = me.institution_id
 			CROSS JOIN requested
 			JOIN "SSwap_profiles" p ON p.account_id <> me.account_id AND p.institution_id <> me.institution_id
 			LEFT JOIN "SSwap_availabilities" d ON d.account_id = p.account_id
@@ -109,7 +98,6 @@ func (a api) getMatches(w http.ResponseWriter, r *http.Request, id string) {
 				(d.period IS NULL OR d.period && requested.period)
 				AND upper(overlap.period) >= lower(overlap.period) + make_interval(months => $7)
 			  ))
-			  AND `+reciprocalRegions+`
 			ORDER BY days DESC NULLS LAST, p.name, p.account_id LIMIT 200
 		)
 		SELECT coalesce(jsonb_agg(item ORDER BY days DESC NULLS LAST, name, id), '[]'::jsonb) FROM results`,
@@ -137,11 +125,10 @@ func (a api) saveInterest(w http.ResponseWriter, r *http.Request, id string) {
 		WITH eligible AS (
 			SELECT me.account_id AS from_id, p.account_id AS to_id
 			FROM "SSwap_profiles" me
-			JOIN "SSwap_institutions" home ON home.id = me.institution_id
 			JOIN "SSwap_profiles" p ON p.account_id = $2::text::uuid
 			JOIN "SSwap_institutions" i ON i.id = p.institution_id AND i.status = 'active'
 			WHERE me.account_id = $1::text::uuid AND me.account_id <> p.account_id
-			  AND p.institution_id <> me.institution_id AND `+reciprocalRegions+`
+			  AND p.institution_id <> me.institution_id
 		), saved AS (
 			INSERT INTO "SSwap_interests" (from_id, to_id)
 			SELECT from_id, to_id FROM eligible ON CONFLICT DO NOTHING

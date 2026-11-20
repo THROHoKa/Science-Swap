@@ -92,7 +92,7 @@ func TestExchangeWorkflow(t *testing.T) {
 	owner := login(nil)
 	request("GET", "/api/matches", nil, owner, http.StatusConflict)
 	p1 := profileInput{Institution: institutions[0], Name: "Owner", Field: "061", From: "2097-09", To: "2098-01",
-		Preferences: []preference{{Scope: "country", Value: "NL"}, {Scope: "region_group", Value: "DACH"}}}
+		Preferences: []preference{{Scope: "country", Value: "DE"}, {Scope: "region_group", Value: "DACH"}}}
 	request("PUT", "/api/profile", p1, owner, http.StatusNoContent)
 	bad := p1
 	bad.Name, bad.Preferences = "Would overwrite", []preference{{Scope: "country", Value: "INVALID"}}
@@ -109,11 +109,13 @@ func TestExchangeWorkflow(t *testing.T) {
 	if readProfile(other)["name"] != "" {
 		t.Fatal("a new session opened another account with the same unverified email")
 	}
-	p2 := profileInput{Institution: institutions[1], Name: "Other", Field: "071", From: "2097-12", To: "2098-06",
-		Preferences: []preference{{Scope: "country", Value: "DE"}}}
+	p2 := profileInput{Institution: institutions[1], Name: "Other", Field: "071", From: "2097-12", To: "2098-06"}
 	request("PUT", "/api/profile", p2, other, http.StatusNoContent)
 	if readProfile(owner)["name"] != "Owner" {
 		t.Fatal("saving another account changed the owner's profile")
+	}
+	if prefs, ok := readProfile(other)["preferences"].([]any); !ok || len(prefs) != 0 {
+		t.Fatalf("new profile should have an empty destination list: %+v", prefs)
 	}
 
 	request("GET", "/api/catalog", nil, owner, http.StatusOK)
@@ -124,6 +126,7 @@ func TestExchangeWorkflow(t *testing.T) {
 	type matchPreview struct {
 		ID, Name, OverlapFrom, OverlapTo string
 		Sent, Received                   bool
+		Preferences                      []preference
 	}
 	matches := func(cookie *http.Cookie, filter string) []matchPreview {
 		t.Helper()
@@ -140,9 +143,19 @@ func TestExchangeWorkflow(t *testing.T) {
 	if len(matches(owner, "")) != 0 || len(matches(owner, "field=all&minimum=3")) != 0 {
 		t.Fatal("matching ignored the field or minimum overlap filter")
 	}
-	got := matches(owner, "field=all&region=eu")
-	if len(got) != 1 || got[0].Name != "Other" || got[0].OverlapFrom != "2097-12" || got[0].OverlapTo != "2098-01" {
+	got := matches(owner, "field=all")
+	if len(got) != 1 || got[0].Preferences == nil || len(got[0].Preferences) != 0 {
+		t.Fatalf("worldwide search should show candidates with an empty destination list: %+v", got)
+	}
+	p2.Preferences = []preference{{Scope: "country", Value: "NL"}}
+	request("PUT", "/api/profile", p2, other, http.StatusNoContent)
+	got = matches(owner, "field=all&region=eu")
+	if len(got) != 1 || got[0].Name != "Other" || got[0].OverlapFrom != "2097-12" || got[0].OverlapTo != "2098-01" ||
+		len(got[0].Preferences) != 1 || got[0].Preferences[0] != p2.Preferences[0] {
 		t.Fatalf("unexpected matching results: %+v", got)
+	}
+	if len(matches(owner, "field=all&region=dach")) != 0 {
+		t.Fatal("region search used saved destinations rather than the candidate's university location")
 	}
 	request("PUT", "/api/interests/"+got[0].ID, nil, owner, http.StatusNoContent)
 	incoming := matches(other, "field=all")
@@ -153,6 +166,12 @@ func TestExchangeWorkflow(t *testing.T) {
 	got = matches(owner, "field=all")
 	if len(got) != 1 || !got[0].Sent || !got[0].Received {
 		t.Fatalf("mutual interest was not recorded: %+v", got)
+	}
+	withoutDestinations := p1
+	withoutDestinations.Preferences = []preference{}
+	request("PUT", "/api/profile", withoutDestinations, owner, http.StatusNoContent)
+	if prefs, ok := readProfile(owner)["preferences"].([]any); !ok || len(prefs) != 0 {
+		t.Fatalf("clearing destinations should remove all saved preferences: %+v", prefs)
 	}
 	withoutDates := p1
 	withoutDates.To = ""

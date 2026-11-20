@@ -236,8 +236,9 @@ async function signOut() {
           <label class="block space-y-1.5 text-sm font-semibold"><span>{{ t('profile.to') }}</span><input v-model="profile.to" class="field text-base font-normal" type="month" :min="profile.from" :required="Boolean(profile.from)" aria-describedby="optional-dates"></label>
         </div>
         <button v-if="profile.from || profile.to" type="button" class="header-link text-sm underline" @click="setPreset({ from: '', to: '' })">{{ t('profile.clearDates') }}</button>
-        <div class="space-y-2">
-          <p class="text-sm font-semibold">{{ t('profile.destinations') }}</p>
+        <div role="group" aria-labelledby="destinations-label" aria-describedby="optional-destinations" class="space-y-2">
+          <p id="destinations-label" class="text-sm font-semibold">{{ t('profile.destinations') }}</p>
+          <p id="optional-destinations" class="text-sm text-slate-600">{{ t('profile.optionalDestinations') }}</p>
           <div class="flex flex-wrap gap-2">
             <button v-for="preset in basicDestinations" :key="preset.scope + preset.value" type="button" class="chip"
               :aria-pressed="profile.preferences.some(item => sameDestination(item, preset))"

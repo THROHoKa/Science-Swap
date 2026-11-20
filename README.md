@@ -1,6 +1,6 @@
 # Science Swap
 
-Science Swap is a web app for finding a partner at another university for a semester exchange. The planned matching workflow uses academic field, overlapping availability, and preferred regions. An exchange match requires interest from both people.
+Science Swap is a web app for finding a partner at another university for a semester exchange. Search by academic field, availability, and university location. An exchange match requires interest from both people.
 
 The starter app displays the version of the PostgreSQL server it is connected to. It serves the Vue interface and API from a single Go binary.
 
@@ -43,7 +43,7 @@ After importing ROR institutions, run `make db-seed` to generate 150 labeled sam
 
 The email entry form starts a server-side session for a provisional account. Keep that browser session to reopen the saved profile. A new browser session using the same unverified address starts a separate profile. Email verification and email contact will be added later.
 
-Profiles save their institution, ISCED-F field, available months, and destination preferences in PostgreSQL. Exchange suggestions require overlapping dates and compatible destinations on both sides. A match is recorded when both people express interest.
+Profiles save their institution, ISCED-F field, optional available months, and optional destination preferences in PostgreSQL. Suggestions include all regions by default. The region filter uses university locations, and saved destinations appear on profile cards. A match is recorded when both people express interest.
 
 ## Deployment
 

@@ -23,6 +23,8 @@ func routes(db *sql.DB, static fs.FS) http.Handler {
 	}
 	mux.HandleFunc("GET /login", servePage)
 	mux.HandleFunc("GET /profile", servePage)
+	mux.HandleFunc("GET /matches", servePage)
+	(api{db}).register(mux)
 
 	mux.HandleFunc("GET /api/version", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)

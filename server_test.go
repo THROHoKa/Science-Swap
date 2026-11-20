@@ -63,7 +63,7 @@ func TestHelloWorld(t *testing.T) {
 		t.Fatal(err)
 	}
 	handler := routes(db, static)
-	for _, path := range []string{"/", "/login", "/profile"} {
+	for _, path := range []string{"/", "/login", "/profile", "/matches"} {
 		page := httptest.NewRecorder()
 		handler.ServeHTTP(page, httptest.NewRequest(http.MethodGet, path, nil))
 		if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "/assets/") {

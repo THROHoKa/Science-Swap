@@ -17,10 +17,6 @@
     "signIn": "Sign in",
     "createProfile": "Create a profile",
     "createProfileNow": "Create your profile",
-    "entry": {
-      "unavailable": "Accounts are coming soon. You can already explore how an exchange works on this page.",
-      "close": "Close"
-    },
     "steps": {
       "profile": {
         "title": "Create a profile",
@@ -50,6 +46,26 @@
       "months": "months",
       "caption": "Fictional exchange example."
     }
+  },
+  "login": {
+    "pageTitle": "Sign in · Science Swap",
+    "title": "Sign in or register",
+    "description": "Enter an email address to try the flow.",
+    "email": "Email address",
+    "placeholder": "first.last{'@'}example.org",
+    "continue": "Continue",
+    "demo": "Demo mode. The demo profile is available in this tab. Email sign-in links will come later.",
+    "error": {
+      "required": "Enter an email address.",
+      "invalid": "Enter a valid email address.",
+      "storage": "Your browser is blocking session storage. Allow it to start the demo."
+    }
+  },
+  "demoProfile": {
+    "pageTitle": "Demo profile · Science Swap",
+    "title": "Your demo profile",
+    "description": "The demo has started. The profile form will be added in a later step.",
+    "leave": "End demo"
   },
   "attribution": {
     "text": "Location data from {geonames} ({geoLicense}). Institution data from {ror} ({rorLicense}).",

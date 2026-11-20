@@ -1,24 +1,20 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import DemoProfilePage from './DemoProfilePage.vue'
 import HomePage from './HomePage.vue'
+import LoginPage from './LoginPage.vue'
 import SwapIcon from './SwapIcon.vue'
 import { useDatabaseStatus } from './database'
 import { saveLocale } from './locale'
 
+defineProps<{ page: 'home' | 'login' | 'profile' }>()
+
 const { t, locale } = useI18n()
 const { database, refresh } = useDatabaseStatus()
 const languages = ['de', 'en'] as const
-const entryDialog = ref<HTMLDialogElement | null>(null)
-const entryMode = ref<'profile' | 'signIn'>('profile')
 
 watch(locale, saveLocale)
-
-async function openEntry(mode: 'profile' | 'signIn') {
-  entryMode.value = mode
-  await nextTick()
-  entryDialog.value?.showModal()
-}
 </script>
 
 <template>
@@ -32,14 +28,14 @@ async function openEntry(mode: 'profile' | 'signIn') {
           {{ t('app.name') }}
         </a>
         <div class="flex items-center gap-2 md:gap-3 lg:gap-5">
-          <div class="hidden items-center gap-2.5 text-sm font-medium md:flex lg:gap-4">
+          <div v-if="page === 'home'" class="hidden items-center gap-2.5 text-sm font-medium md:flex lg:gap-4">
             <a href="#how-it-works" class="header-link">{{ t('home.howItWorks') }}</a>
-            <button type="button" class="header-link" @click="openEntry('signIn')">
+            <a href="/login" class="header-link">
               {{ t('home.signIn') }}
-            </button>
-            <button type="button" class="button button-primary rounded-[10px] px-4" @click="openEntry('profile')">
+            </a>
+            <a href="/login" class="button button-primary rounded-[10px] px-4">
               {{ t('home.createProfile') }}
-            </button>
+            </a>
           </div>
 
           <div class="flex rounded-[10px] border border-slate-200" role="group" :aria-label="t('language.label')">
@@ -56,24 +52,26 @@ async function openEntry(mode: 'profile' | 'signIn') {
             </button>
           </div>
 
-          <button
-            type="button"
+          <a
+            v-if="page === 'home'"
+            href="/login"
             class="grid size-11 place-items-center rounded-[10px] border border-slate-200 text-slate-700 hover:bg-slate-100 md:hidden"
             :aria-label="t('home.signIn')"
-            @click="openEntry('signIn')"
           >
             <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
               <circle cx="12" cy="8" r="3" />
               <path d="M5 20v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1" />
             </svg>
-          </button>
+          </a>
         </div>
       </nav>
     </header>
 
-    <HomePage @create-profile="openEntry('profile')" />
+    <HomePage v-if="page === 'home'" />
+    <LoginPage v-else-if="page === 'login'" />
+    <DemoProfilePage v-else />
 
-    <footer class="mt-auto">
+    <footer v-if="page === 'home'" class="mt-auto">
       <div class="mx-auto flex max-w-[1160px] flex-wrap items-start justify-between gap-x-8 gap-y-3 px-6 py-8 text-sm leading-relaxed text-slate-600">
         <div class="space-y-2">
           <p class="font-semibold text-slate-900">{{ t('app.name') }}</p>
@@ -106,20 +104,5 @@ async function openEntry(mode: 'profile' | 'signIn') {
         </details>
       </div>
     </footer>
-
-    <dialog
-      ref="entryDialog"
-      class="m-auto w-11/12 max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-xl backdrop:bg-slate-950/45"
-      aria-labelledby="entry-title"
-      aria-describedby="entry-description"
-    >
-      <h2 id="entry-title" class="font-display text-2xl font-bold">
-        {{ t(entryMode === 'profile' ? 'home.createProfile' : 'home.signIn') }}
-      </h2>
-      <p id="entry-description" class="mt-3 leading-relaxed text-slate-600">{{ t('home.entry.unavailable') }}</p>
-      <form method="dialog" class="mt-5 flex justify-end">
-        <button type="submit" class="button button-primary px-4">{{ t('home.entry.close') }}</button>
-      </form>
-    </dialog>
   </div>
 </template>

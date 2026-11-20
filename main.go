@@ -26,8 +26,8 @@ func main() {
 }
 
 func run(ctx context.Context, args []string) error {
-	const usage = "usage: science-swap [migrate | import-ror (--latest | --file PATH)]"
-	if len(args) > 0 && args[0] != "import-ror" && (len(args) != 1 || args[0] != "migrate") {
+	const usage = "usage: science-swap [migrate | import-ror (--latest | --file PATH) | seed]"
+	if len(args) > 0 && args[0] != "import-ror" && args[0] != "seed" && (len(args) != 1 || args[0] != "migrate") {
 		return errors.New(usage)
 	}
 	url := os.Getenv("DATABASE_URL")
@@ -41,8 +41,11 @@ func run(ctx context.Context, args []string) error {
 	defer db.Close()
 
 	if len(args) > 0 {
-		if args[0] == "migrate" {
+		switch args[0] {
+		case "migrate":
 			return migrate(ctx, db)
+		case "seed":
+			return seedCommand(ctx, db, args[1:])
 		}
 		return importRORCommand(ctx, db, args[1:])
 	}

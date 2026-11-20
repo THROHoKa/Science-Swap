@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := build
 
-.PHONY: dev test build db-migrate web-build
+.PHONY: dev test build db-migrate db-seed web-build
 
 load_env = set -a; if [ -f .env ]; then . ./.env || exit; fi; set +a
 
@@ -23,3 +23,6 @@ test: web-build
 
 db-migrate: build
 	@$(load_env); exec ./bin/science-swap migrate
+
+db-seed: db-migrate
+	@$(load_env); exec ./bin/science-swap seed

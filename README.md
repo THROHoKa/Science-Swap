@@ -37,6 +37,14 @@ set +a
 
 Each import reconciles the database with a complete ROR snapshot. It preserves institution IDs and marks existing records that leave the active education set. Downloads and archives under `data/` are Git-ignored.
 
+After importing ROR institutions, run `make db-seed` to generate 150 labeled sample exchange profiles. The seed command accepts `--count` and `--random-seed` and is restricted to the local development and test databases.
+
+## Exchange profiles
+
+The email entry form starts a server-side session for a provisional account. Keep that browser session to reopen the saved profile. A new browser session using the same unverified address starts a separate profile. Email verification and email contact will be added later.
+
+Profiles save their institution, ISCED-F field, available months, and destination preferences in PostgreSQL. Exchange suggestions require overlapping dates and compatible destinations on both sides. A match is recorded when both people express interest.
+
 ## Deployment
 
 The multi-stage Dockerfile uses Node.js 24 to build Vue, then embeds the result and migrations in the Go binary. `fly.toml` targets Frankfurt (`fra`) and runs migrations before release. The Fly app needs a PostgreSQL 17+ connection in its `DATABASE_URL` secret.

@@ -1,27 +1,29 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { startDemoSession } from './demo-session'
+import { api, APIError, json } from './api'
 
 const { t } = useI18n()
 const input = ref<HTMLInputElement | null>(null)
-const error = ref<'required' | 'invalid' | 'storage' | null>(null)
+const error = ref<'required' | 'invalid' | 'unavailable' | null>(null)
+const submitting = ref(false)
 
-function continueDemo() {
+async function continueDemo() {
   const field = input.value
-  if (!field) return
+  if (!field || submitting.value) return
   if (!field.validity.valid) {
     error.value = field.validity.valueMissing ? 'required' : 'invalid'
     field.focus()
     return
   }
+  submitting.value = true
   try {
-    startDemoSession()
-  } catch {
-    error.value = 'storage'
-    return
+    await api('/session', json('POST', { email: field.value }))
+    window.location.assign('/profile')
+  } catch (problem) {
+    error.value = problem instanceof APIError && problem.code === 'invalid_email' ? 'invalid' : 'unavailable'
+    submitting.value = false
   }
-  window.location.assign('/profile')
 }
 </script>
 
@@ -53,8 +55,8 @@ function continueDemo() {
           />
           <p v-if="error" id="login-error" class="text-sm text-red-700" role="alert">{{ t(`login.error.${error}`) }}</p>
         </div>
-        <button type="submit" class="button button-primary min-h-12 w-full rounded-[10px]">
-          {{ t('login.continue') }}
+        <button type="submit" class="button button-primary min-h-12 w-full rounded-[10px] disabled:opacity-60" :disabled="submitting">
+          {{ submitting ? t('common.loading') : t('login.continue') }}
         </button>
       </form>
 

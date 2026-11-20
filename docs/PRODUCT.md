@@ -33,7 +33,9 @@ Application tables use the `SSwap` prefix.
 | Interest | One profile's expression of interest in another profile |
 | Match | Pair of profiles with reciprocal interest |
 
-PostgreSQL's `&&` operator checks date overlap. The ISCED-F level used to determine field compatibility and any minimum overlap beyond intersecting dates remain open.
+PostgreSQL's `&&` operator checks date overlap. Suggestions default to the same three-digit ISCED-F field and at least one shared month. Users can include other fields and select a minimum of one, three, or six shared months.
+
+During the email-entry phase, an unverified account is accessible through its current browser session. Contact requests are saved as interest. Email verification and delivery are required before the email-contact step is enabled.
 
 ## Out of scope for the MVP
 

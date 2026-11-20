@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import DemoProfilePage from './DemoProfilePage.vue'
 import HomePage from './HomePage.vue'
 import LoginPage from './LoginPage.vue'
+import MatchesPage from './MatchesPage.vue'
+import ProfilePage from './ProfilePage.vue'
 import SwapIcon from './SwapIcon.vue'
 import { useDatabaseStatus } from './database'
 import { saveLocale } from './locale'
 
-defineProps<{ page: 'home' | 'login' | 'profile' }>()
+defineProps<{ page: 'home' | 'login' | 'profile' | 'matches' }>()
 
 const { t, locale } = useI18n()
 const { database, refresh } = useDatabaseStatus()
@@ -37,6 +38,10 @@ watch(locale, saveLocale)
               {{ t('home.createProfile') }}
             </a>
           </div>
+          <div v-else-if="page !== 'login'" class="hidden items-center gap-4 text-sm font-medium md:flex">
+            <a href="/matches" class="header-link aria-[current=page]:text-indigo-800" :aria-current="page === 'matches' ? 'page' : undefined">{{ t('matches.navigation') }}</a>
+            <a href="/profile" class="header-link aria-[current=page]:text-indigo-800" :aria-current="page === 'profile' ? 'page' : undefined">{{ t('profile.navigation') }}</a>
+          </div>
 
           <div class="flex rounded-[10px] border border-slate-200" role="group" :aria-label="t('language.label')">
             <button
@@ -53,10 +58,10 @@ watch(locale, saveLocale)
           </div>
 
           <a
-            v-if="page === 'home'"
-            href="/login"
+            v-if="page !== 'login'"
+            :href="page === 'home' ? '/login' : '/profile'"
             class="grid size-11 place-items-center rounded-[10px] border border-slate-200 text-slate-700 hover:bg-slate-100 md:hidden"
-            :aria-label="t('home.signIn')"
+            :aria-label="t(page === 'home' ? 'home.signIn' : 'profile.navigation')"
           >
             <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
               <circle cx="12" cy="8" r="3" />
@@ -69,7 +74,8 @@ watch(locale, saveLocale)
 
     <HomePage v-if="page === 'home'" />
     <LoginPage v-else-if="page === 'login'" />
-    <DemoProfilePage v-else />
+    <ProfilePage v-else-if="page === 'profile'" />
+    <MatchesPage v-else />
 
     <footer v-if="page === 'home'" class="mt-auto">
       <div class="mx-auto flex max-w-[1160px] flex-wrap items-start justify-between gap-x-8 gap-y-3 px-6 py-8 text-sm leading-relaxed text-slate-600">

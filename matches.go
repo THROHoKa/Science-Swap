@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -13,6 +14,20 @@ import (
 func (a api) getMatches(w http.ResponseWriter, r *http.Request, id string) {
 	query := r.URL.Query()
 	from, to := query.Get("from"), query.Get("to")
+	fields := query["field"]
+	switch {
+	case len(fields) == 1 && fields[0] == "all":
+		fields = []string{}
+	case len(fields) == 1 && fields[0] == "same":
+		fields = nil
+	default:
+		for _, code := range fields {
+			if len(code) != 3 || strings.Trim(code, "0123456789") != "" {
+				apiError(w, http.StatusBadRequest, "invalid_request")
+				return
+			}
+		}
+	}
 	minimum := 1
 	if value := query.Get("minimum"); value != "" {
 		var err error
@@ -23,10 +38,13 @@ func (a api) getMatches(w http.ResponseWriter, r *http.Request, id string) {
 		}
 	}
 	scope, value := "world", ""
-	switch query.Get("region") {
+	region := query.Get("region")
+	switch region {
 	case "", "world":
 	case "europe":
 		scope, value = "continent", "EU"
+	case "AF", "AN", "AS", "NA", "OC", "SA":
+		scope, value = "continent", region
 	case "eu":
 		scope, value = "region_group", "EU"
 	case "dach":
@@ -48,7 +66,7 @@ func (a api) getMatches(w http.ResponseWriter, r *http.Request, id string) {
 		internalError(w, err)
 		return
 	}
-	if from == "" && to == "" {
+	if !query.Has("from") && !query.Has("to") {
 		from, to = savedFrom, savedTo
 	}
 	start, end, valid := optionalMonthRange(from, to)
@@ -92,7 +110,11 @@ func (a api) getMatches(w http.ResponseWriter, r *http.Request, id string) {
 				END AS period
 			) overlap
 			WHERE me.account_id = $1::text::uuid
-			  AND ($4::boolean OR p.isced_code = me.isced_code)
+			  AND CASE
+				WHEN $4::text[] IS NULL THEN p.isced_code = me.isced_code
+				WHEN cardinality($4::text[]) = 0 THEN true
+				ELSE p.isced_code::text = ANY($4::text[])
+			  END
 			  AND sswap_region_contains($5, $6, i.country_code, i.continent_code, i.subdivision_code)
 			  AND (requested.period IS NULL OR (
 				(d.period IS NULL OR d.period && requested.period)
@@ -101,7 +123,7 @@ func (a api) getMatches(w http.ResponseWriter, r *http.Request, id string) {
 			ORDER BY days DESC NULLS LAST, p.name, p.account_id LIMIT 200
 		)
 		SELECT coalesce(jsonb_agg(item ORDER BY days DESC NULLS LAST, name, id), '[]'::jsonb) FROM results`,
-		id, start, end, query.Get("field") == "all", scope, value, minimum).Scan(&data)
+		id, start, end, fields, scope, value, minimum).Scan(&data)
 	if err != nil {
 		internalError(w, err)
 		return

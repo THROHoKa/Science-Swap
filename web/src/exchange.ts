@@ -17,6 +17,10 @@ export type Destination = {
 
 export type Period = { from: string; to: string }
 export const hasPeriod = (period: Period) => Boolean(period.from && period.to)
+export const isAnyTime = ({ from, to }: Period) => !from && !to
+const monthPattern = /^[0-9]{4}-(0[1-9]|1[0-2])$/
+export const isValidPeriod = ({ from, to }: Period) => monthPattern.test(from) && monthPattern.test(to) &&
+  from >= '0001-01' && to <= '9998-12' && from <= to
 export type Profile = Period & {
   email: string
   title: string
@@ -44,11 +48,11 @@ export type Candidate = Period & {
   received: boolean
 }
 export type Matches = Period & { results: Candidate[] }
-export type MatchFilter = { allFields: boolean; region: string; preset: string; minimum: number }
+export type MatchFilter = Period & { fields: string[]; region: string; minimum: number }
 
 const continents: Record<string, string> = { AF: '002', AN: '010', AS: '142', EU: '150', NA: '003', OC: '009', SA: '005' }
 export const continentCodes = Object.keys(continents)
-export const regionOptions = ['world', 'europe', 'eu', 'dach'] as const
+export const regionOptions = ['world', 'europe', 'eu', 'dach', ...continentCodes.filter(code => code !== 'EU')]
 export const basicDestinations: Destination[] = [
   { scope: 'world', value: '' },
   { scope: 'continent', value: 'EU' },
@@ -63,6 +67,7 @@ export function useExchangeLabels() {
   const localized = (label: Label) => locale.value === 'de' ? label.de : label.en
   const country = (code: string) => code ? display.value.of(code) ?? code : ''
   const continent = (code: string) => continents[code] ? display.value.of(continents[code]) ?? t(`continents.${code}`) : ''
+  const regionLabel = (region: string) => continent(region) || t(`regions.${region}`)
   const place = (i: Institution) => [...new Set([i.city, i.subdivision, country(i.country)].filter(Boolean))].join(' · ')
   const month = (value: string) => dates.value.format(new Date(value + '-01T00:00:00Z'))
   const field = (code: string, catalog: Catalog) => {
@@ -81,22 +86,7 @@ export function useExchangeLabels() {
       case 'subdivision': return country(item.value.split(':')[0]) + ' · ' + item.value.split(':')[1]
     }
   }
-  return { t, locale, country, continent, place, month, field, destination }
-}
-
-export function academicPresets(year: number) {
-  const start = String(year).padStart(4, '0')
-  const next = String(year + 1).padStart(4, '0')
-  return [
-    { key: 'year', from: start + '-09', to: next + '-08' },
-    { key: 'winter', from: start + '-10', to: next + '-03' },
-    { key: 'summer', from: next + '-04', to: next + '-09' },
-  ]
-}
-
-export function academicYear() {
-  const now = new Date()
-  return now.getFullYear() + Number(now.getMonth() >= 8)
+  return { t, locale, country, continent, regionLabel, place, month, field, destination }
 }
 
 export function monthIndex(value: string) {

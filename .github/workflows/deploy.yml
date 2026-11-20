@@ -1,0 +1,67 @@
+name: Deploy to Fly.io
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fly-production
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test with PostgreSQL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: faculty_swap_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d faculty_swap_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Run tests
+        run: make test
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/faculty_swap_test?sslmode=disable
+
+  deploy:
+    name: Deploy Science Swap
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: superfly/flyctl-actions/setup-flyctl@98172f70657cb3e15db199af139be99bd3e61200
+        with:
+          version: '0.5.14'
+      - name: Deploy to Fly.io
+        run: flyctl deploy --remote-only --ha=false --yes
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      - name: Check live database connection
+        run: curl --fail --silent --show-error --retry 6 --retry-delay 5 --max-time 10 https://science-swap.fly.dev/api/version

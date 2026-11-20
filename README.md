@@ -33,4 +33,6 @@ flyctl mpg databases extensions enable cube --cluster "$FLY_MPG_CLUSTER" --datab
 flyctl mpg databases extensions enable earthdistance --cluster "$FLY_MPG_CLUSTER" --database fly-db
 ```
 
-The intended deployment automation is a GitHub Actions workflow that deploys to Fly.io after changes land on `main`.
+Pushes to `main` trigger the [GitHub Actions deployment workflow](.github/workflows/deploy.yml). It runs `make test` against PostgreSQL 17, deploys to Fly.io after the tests pass, and checks that the live API can read the database version.
+
+The workflow uses the repository secret `FLY_API_TOKEN`. Rotate it before expiry using an app-scoped token from `flyctl tokens create deploy --app science-swap`.

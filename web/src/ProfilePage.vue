@@ -7,8 +7,11 @@ import MonthRangeFields from './MonthRangeFields.vue'
 
 const { t, locale, country, continent, place, field, destination } = useExchangeLabels()
 const profile = ref<Profile>()
-const teachingAreas = ref<(Omit<TeachingArea, 'experience'> & { experience: TeachingArea['experience'] | '' })[]>([])
-const legacyTeachingTitle = computed(() => profile.value?.teachingAreas.find(area => area.experience === null)?.title)
+const teachingTitle = ref('')
+const teachingExperience = ref<NonNullable<TeachingArea['experience']> | ''>('')
+const teachingTitleInput = ref<HTMLInputElement | null>(null)
+const canAddTeachingArea = computed(() => (profile.value?.teachingAreas.length ?? 0) < 20 &&
+  Boolean(teachingTitle.value.trim() && teachingExperience.value))
 const catalog = ref<Catalog>()
 const query = ref('')
 const suggestions = ref<Institution[]>([])
@@ -31,7 +34,6 @@ onMounted(async () => {
     catalog.value = options
     query.value = saved.institution?.name ?? ''
     profile.value = saved
-    teachingAreas.value = saved.teachingAreas.map(area => ({ ...area }))
     for (const pref of saved.preferences) {
       if (pref.scope !== 'subdivision') continue
       const [code] = pref.value.split(':')
@@ -119,6 +121,15 @@ function clearDates() {
   if (profile.value) Object.assign(profile.value, { from: '', to: '' })
 }
 
+function addTeachingArea() {
+  const p = profile.value
+  if (!p || !canAddTeachingArea.value || !teachingExperience.value) return
+  p.teachingAreas.push({ title: teachingTitle.value.trim(), experience: teachingExperience.value })
+  teachingTitle.value = ''
+  teachingExperience.value = ''
+  teachingTitleInput.value?.focus()
+}
+
 async function save() {
   const p = profile.value
   if (!p || saving.value) return
@@ -132,7 +143,7 @@ async function save() {
   try {
     await api('/profile', json('PUT', {
       title: p.title, name: p.name, institutionId: p.institution.id, field: p.field,
-      teachingAreas: teachingAreas.value, from: p.from, to: p.to, preferences: p.preferences,
+      teachingAreas: p.teachingAreas, from: p.from, to: p.to, preferences: p.preferences,
     }))
     window.location.assign('/matches')
   } catch (problem) {
@@ -220,26 +231,34 @@ async function signOut() {
 
       <fieldset class="panel space-y-4">
         <legend class="px-2 font-semibold">{{ t('profile.teaching') }}</legend>
-        <ul v-if="teachingAreas.length" class="space-y-3">
-          <li v-for="(area, index) in teachingAreas" :key="index" class="grid items-end gap-3 rounded-lg border border-slate-200 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-            <label class="block space-y-1.5 text-sm font-semibold">
-              <span>{{ t('teaching.title') }}</span>
-              <input v-model="area.title" class="field text-base font-normal" maxlength="500" required>
-            </label>
-            <label class="block space-y-1.5 text-sm font-semibold">
-              <span>{{ t('teaching.experience') }}</span>
-              <select v-model="area.experience" class="field text-base font-normal"
-                :required="area.experience !== null || area.title.trim() !== legacyTeachingTitle">
-                <option v-if="area.experience === null" :value="null" disabled>{{ t('teaching.unspecified') }}</option>
-                <option v-else value="" disabled>{{ t('teaching.chooseExperience') }}</option>
-                <option v-for="experience in teachingExperiences" :key="experience" :value="experience">{{ t(`teaching.levels.${experience}`) }}</option>
-              </select>
-            </label>
-            <button type="button" class="chip w-fit" @click="teachingAreas.splice(index, 1)">{{ t('teaching.remove') }}</button>
+        <ul v-if="profile.teachingAreas.length" class="space-y-2">
+          <li v-for="(area, index) in profile.teachingAreas" :key="index" class="flex items-start justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+            <div class="min-w-0">
+              <p class="wrap-break-word whitespace-pre-line font-semibold">{{ area.title }}</p>
+              <p class="text-sm text-slate-600">{{ area.experience ? t(`teaching.levels.${area.experience}`) : t('teaching.unspecified') }}</p>
+            </div>
+            <button type="button" class="grid size-9 shrink-0 place-items-center rounded-md text-lg text-slate-600 hover:bg-slate-200"
+              :aria-label="t('teaching.remove', { title: area.title })" @click="profile.teachingAreas.splice(index, 1)">
+              <span aria-hidden="true">×</span>
+            </button>
           </li>
         </ul>
-        <button type="button" class="button button-secondary px-4" :disabled="teachingAreas.length >= 20"
-          @click="teachingAreas.push({ title: '', experience: '' })">{{ t('teaching.add') }}</button>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="block space-y-1.5 text-sm font-semibold">
+            <span>{{ t('teaching.title') }}</span>
+            <input ref="teachingTitleInput" v-model="teachingTitle" class="field text-base font-normal" maxlength="500" @keydown.enter.prevent="addTeachingArea">
+          </label>
+          <label class="block space-y-1.5 text-sm font-semibold">
+            <span>{{ t('teaching.experience') }}</span>
+            <select v-model="teachingExperience" class="field text-base font-normal">
+              <option value="" disabled>{{ t('teaching.chooseExperience') }}</option>
+              <option v-for="experience in teachingExperiences" :key="experience" :value="experience">{{ t(`teaching.levels.${experience}`) }}</option>
+            </select>
+          </label>
+        </div>
+        <button type="button" class="button button-secondary px-4 disabled:opacity-50" :disabled="!canAddTeachingArea"
+          @click="addTeachingArea">{{ t('teaching.add') }}</button>
+        <p v-if="teachingTitle || teachingExperience" class="text-sm text-slate-600">{{ t('teaching.addBeforeSave') }}</p>
       </fieldset>
 
       <fieldset class="panel space-y-4">

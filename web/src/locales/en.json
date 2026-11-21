@@ -136,7 +136,8 @@
     "chooseExperience": "Select experience",
     "unspecified": "Experience unspecified",
     "add": "Add teaching area",
-    "remove": "Remove",
+    "remove": "Remove {title}",
+    "addBeforeSave": "Use Add teaching area to include this entry when you save.",
     "levels": {
       "full_lecture": "Full lecture",
       "exercise_only": "Exercise only",

@@ -136,7 +136,8 @@
     "chooseExperience": "Erfahrung auswählen",
     "unspecified": "Erfahrung nicht angegeben",
     "add": "Lehrgebiet hinzufügen",
-    "remove": "Entfernen",
+    "remove": "{title} entfernen",
+    "addBeforeSave": "Wähle „Lehrgebiet hinzufügen“, um diesen Eintrag beim Speichern zu übernehmen.",
     "levels": {
       "full_lecture": "Vollständige Vorlesung",
       "exercise_only": "Nur Übungen",
